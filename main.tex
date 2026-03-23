@@ -81,7 +81,7 @@ section=TITLE, % Título de seções em caixa alta
 % \subtitulo{\lang{Subtitle}{Subtítulo}}
 
 % FIXME: Siglas para grau de formação Dr./Dra., Me./Ma, Bel. Bela. (inglês: PhD., MSc., Bs.)
-\orientador[\lang{Supervisor}{Orientador}]{\brazilword{Carlos Becker Westphall}, \lang{PhD.}{Prof. Dr.}}
+\orientador[\lang{Supervisor}{Orientador}]{\brazilword{Prof. Carlos Becker Westphall, Dr.}}
 
 % FIXME: Se houver coorientador, descomente a linha abaixo
 % \coorientador[\lang{Co-supervisor}{Coorientador(a)}]{\brazilword{Nome do coorientador(a)}, \lang{Phd.}{Dr.}}
@@ -223,104 +223,104 @@ section=TITLE, % Título de seções em caixa alta
 
 
 \begin{document}
-    % FIXME: Comment this after finishing the thesis, so you can start fixing the \flushbottom vs \raggedbottom
-    % https://tex.stackexchange.com/questions/65355/flushbottom-vs-raggedbottom
-    \raggedbottom
+% FIXME: Comment this after finishing the thesis, so you can start fixing the \flushbottom vs \raggedbottom
+% https://tex.stackexchange.com/questions/65355/flushbottom-vs-raggedbottom
+\raggedbottom
 
-    % https://tex.stackexchange.com/questions/4705/double-space-between-sentences
-    \frenchspacing
+% https://tex.stackexchange.com/questions/4705/double-space-between-sentences
+\frenchspacing
 
-    % Uncomment this to put a ←← | ← (Go To Top/Go Back) on each section header
-    \advisor{}{\addGoToSummary}
+% Uncomment this to put a ←← | ← (Go To Top/Go Back) on each section header
+\advisor{}{\addGoToSummary}
 
-    % ELEMENTOS PRÉ-TEXTUAIS
-    \input{beforetext/beforetext.tex}
+% ELEMENTOS PRÉ-TEXTUAIS
+\input{beforetext/beforetext.tex}
 
-    % ELEMENTOS TEXTUAIS
-    \textual
+% ELEMENTOS TEXTUAIS
+\textual
+\setlength\beforechapskip{50pt}
+\setlength\midchapskip{20pt}
+\setlength\afterchapskip{20pt}
+
+% PARTE
+\ifforcedinclude\else\part{\lang{Research}{Pesquisa}}\fi
+\label{primeira_parte}
+
+% Introdução (exemplo de capítulo sem numeração, mas presente no Sumário)
+\include{chapters/intro}
+
+% Capitulo com exemplos de comandos inseridos de arquivo externo
+\include{chapters/chapter_1}
+
+% Capitulo de revisão de literatura
+\include{chapters/chapter_2}
+
+% Primeiro capitulo de Resultados
+\include{chapters/chapter_3}
+
+% PARTE
+\ifforcedinclude\else\part{\lang{Implementation}{Implementação}}\fi
+\label{segunda_parte}
+
+% Segundo capitulo de Resultados
+\include{chapters/chapter_4}
+
+% Finaliza a parte no bookmark do PDF para que se inicie o bookmark na raiz
+% e adiciona espaço de parte no Sumário
+\phantompart
+
+% Conclusão (outro exemplo de capítulo sem numeração e presente no sumário)
+\include{chapters/conclusion}
+
+% ELEMENTOS PÓS-TEXTUAIS
+\postextual
+\setlength\beforechapskip{0pt}
+\setlength\midchapskip{15pt}
+\setlength\afterchapskip{15pt}
+
+% Referências bibliográficas
+\begingroup
+% https://tex.stackexchange.com/questions/163559/how-to-modify-line-spacing-per-entry-of-bibliography
+% https://tex.stackexchange.com/questions/19105/how-can-i-put-more-space-between-bibliography-entries-biblatex
+\setlength\bibitemsep{\baselineskip}
+\advisor{}{\linespread{1.18}\selectfont}
+
+% https://tex.stackexchange.com/questions/17128/using-bibtex-to-make-a-list-of-references-without-having-citations-in-the-body
+% \nocite{*}
+\printbibliography[title=\lang{REFERENCES}{REFERÊNCIAS}]
+\endgroup
+
+% Glossário, consulte o manual da classe abntex2 para orientações sobre o glossário.
+% \ifforcedinclude\else\glossary\fi
+
+% Inicia os apêndices
+\begin{apendicesenv}
+    % Imprime uma página indicando o início dos apêndices
+    \ifforcedinclude\else\partapendices\fi
     \setlength\beforechapskip{50pt}
     \setlength\midchapskip{20pt}
     \setlength\afterchapskip{20pt}
 
-    % PARTE
-    \ifforcedinclude\else\part{\lang{Research}{Pesquisa}}\fi
-    \label{primeira_parte}
+    \include{aftertext/apendice_a}
+\end{apendicesenv}
 
-    % Introdução (exemplo de capítulo sem numeração, mas presente no Sumário)
-    \include{chapters/intro}
+% Inicia os anexos
+\begin{anexosenv}
+    % Imprime uma página indicando o início dos anexos
+    \ifforcedinclude\else\partanexos\fi
+    \setlength\beforechapskip{50pt}
+    \setlength\midchapskip{20pt}
+    \setlength\afterchapskip{20pt}
 
-    % Capitulo com exemplos de comandos inseridos de arquivo externo
-    \include{chapters/chapter_1}
+    \include{aftertext/anexo_a}
+    \include{aftertext/anexo_b}
+\end{anexosenv}
 
-    % Capitulo de revisão de literatura
-    \include{chapters/chapter_2}
-
-    % Primeiro capitulo de Resultados
-    \include{chapters/chapter_3}
-
-    % PARTE
-    \ifforcedinclude\else\part{\lang{Implementation}{Implementação}}\fi
-    \label{segunda_parte}
-
-    % Segundo capitulo de Resultados
-    \include{chapters/chapter_4}
-
-    % Finaliza a parte no bookmark do PDF para que se inicie o bookmark na raiz
-    % e adiciona espaço de parte no Sumário
+% INDICE REMISSIVO
+\ifforcedinclude\else
     \phantompart
-
-    % Conclusão (outro exemplo de capítulo sem numeração e presente no sumário)
-    \include{chapters/conclusion}
-
-    % ELEMENTOS PÓS-TEXTUAIS
-    \postextual
-    \setlength\beforechapskip{0pt}
-    \setlength\midchapskip{15pt}
-    \setlength\afterchapskip{15pt}
-
-    % Referências bibliográficas
-    \begingroup
-        % https://tex.stackexchange.com/questions/163559/how-to-modify-line-spacing-per-entry-of-bibliography
-        % https://tex.stackexchange.com/questions/19105/how-can-i-put-more-space-between-bibliography-entries-biblatex
-        \setlength\bibitemsep{\baselineskip}
-        \advisor{}{\linespread{1.18}\selectfont}
-
-        % https://tex.stackexchange.com/questions/17128/using-bibtex-to-make-a-list-of-references-without-having-citations-in-the-body
-        % \nocite{*}
-        \printbibliography[title=\lang{REFERENCES}{REFERÊNCIAS}]
-    \endgroup
-
-    % Glossário, consulte o manual da classe abntex2 para orientações sobre o glossário.
-    % \ifforcedinclude\else\glossary\fi
-
-    % Inicia os apêndices
-    \begin{apendicesenv}
-        % Imprime uma página indicando o início dos apêndices
-        \ifforcedinclude\else\partapendices\fi
-        \setlength\beforechapskip{50pt}
-        \setlength\midchapskip{20pt}
-        \setlength\afterchapskip{20pt}
-
-        \include{aftertext/apendice_a}
-    \end{apendicesenv}
-
-    % Inicia os anexos
-    \begin{anexosenv}
-        % Imprime uma página indicando o início dos anexos
-        \ifforcedinclude\else\partanexos\fi
-        \setlength\beforechapskip{50pt}
-        \setlength\midchapskip{20pt}
-        \setlength\afterchapskip{20pt}
-
-        \include{aftertext/anexo_a}
-        \include{aftertext/anexo_b}
-    \end{anexosenv}
-
-    % INDICE REMISSIVO
-    \ifforcedinclude\else
-        \phantompart
-        \printindex
-    \fi
+    \printindex
+\fi
 
 \end{document}
 
