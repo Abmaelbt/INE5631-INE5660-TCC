@@ -57,3 +57,11 @@ main.pdf
 *.fls
 *.loq
 .vscode/
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+
+# Docs não importantes
+/docs/modelos/
