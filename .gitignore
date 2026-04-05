@@ -62,6 +62,3 @@ main.pdf
 .env
 .env.*
 !.env.example
-
-# Docs não importantes
-/docs/modelos/
