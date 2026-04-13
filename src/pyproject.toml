@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "aiops-middleware"
+version = "0.1.0"
+description = "Middleware for AIOps Root Cause Analysis"
+authors = ["Abmael"]
+readme = "README.md"
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.115.0"
+uvicorn = "^0.30.0"
+httpx = "^0.27.0"
+pydantic = "^2.8.0"
+pydantic-settings = "^2.4.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
