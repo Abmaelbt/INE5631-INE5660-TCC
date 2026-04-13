@@ -62,3 +62,25 @@ main.pdf
 .env
 .env.*
 !.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pytest e Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Ambientes virtuais
+venv/
+.venv/
+env/
+ENV/
+
+# Ferramentas IDE
+.idea/
+.vscode/
+*.swp
+*.swo
