@@ -1,7 +1,5 @@
 # Sistema de AIOps para Monitoramento e Análise de Causa Raiz de Incidentes em Servidores Cloud com LLMs
 
-Bem-vindo ao repositório do Trabalho de Conclusão de Curso (TCC).
-
 ## Estrutura do Projeto
 
 Este repositório está subdividido em duas partes principais:

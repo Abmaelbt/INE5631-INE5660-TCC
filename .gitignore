@@ -63,6 +63,9 @@ main.pdf
 .env.*
 !.env.example
 
+# Artigos Científicos do Drive local
+docs/references/artigos_pdf/*.pdf
+
 # Python
 __pycache__/
 *.py[cod]
