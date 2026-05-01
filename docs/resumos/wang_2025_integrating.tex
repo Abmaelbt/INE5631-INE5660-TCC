@@ -1,0 +1,27 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{geometry}
+\geometry{a4paper, margin=2cm}
+
+\begin{document}
+
+\section*{Resumo: Integrating LLMs with Cloud-Native Observability for Automated Root Cause Analysis and Remediation}
+\label{sec:resumo_wang_2025_integrating}
+
+\noindent\textbf{Referência:} WANG, C. et al. \textit{Integrating Large Language Models with Cloud-Native Observability for Automated Root Cause Analysis and Remediation}. Proceedings of the 3rd International Conference on Artificial Intelligence, Systems and Network Security, 2025.
+
+\subsection*{Contexto e Problema}
+Sistemas \textit{cloud-native} modernos (baseados em microsserviços e contêineres) geram um volume massivo de telemetria (\textit{metrics}, \textit{logs} e \textit{traces}), tornando o monitoramento tradicional baseado em regras ineficaz. Equipes de SRE sofrem com grande carga cognitiva para correlacionar esses dados e investigar incidentes em tempo hábil. Embora os LLMs ofereçam um alto potencial para automatizar a Análise de Causa Raiz (RCA), sua aplicação direta esbarra em limites de janela de contexto, na falta de conhecimento do domínio operacional e na necessidade de realizar um raciocínio causal preciso e seguro.
+
+\subsection*{Metodologia (Solução Proposta)}
+O artigo propõe um \textit{framework} de quatro camadas: coleta via OpenTelemetry, detecção de anomalias por algoritmos tradicionais, RCA aprimorada por LLM e remediação automatizada. Para superar os limites de contexto da IA, o sistema extrai e sumariza os dados apenas nas janelas de tempo cruciais. O LLM (treinado a partir do Llama-2-13B) passa por um rigoroso processo de \textit{fine-tuning} e Otimização Direta de Preferência (DPO). A arquitetura aplica a fusão multimodal (\textit{Cross-Modal Attention}) para unificar as métricas aos \textit{logs} do sistema. Por fim, o agente utiliza engenharia de \textit{prompt} via \textit{Chain-of-Thought} (CoT) (raciocínio passo a passo) para construir a hipótese de causa raiz e validar a segurança de um roteiro autônomo de remediação.
+
+\subsection*{Resultados Obtidos (e Avaliação)}
+Nos testes utilizando \textit{benchmarks} públicos de microsserviços sob cenários de falhas induzidas, a abordagem alcançou um impressionante \textit{F1-Score} de 95\% na detecção correta. Destaca-se a redução de 84,2\% no Tempo Médio de Resolução (MTTR) frente aos métodos baseados em regras, atingindo uma taxa de automação de 91\% na resolução de incidentes sem intervenção humana. O estudo de ablação demonstrou que tanto a fusão multimodal quanto a especialização do domínio via \textit{fine-tuning} são essenciais para essa precisão.
+
+\subsection*{Relação com este TCC}
+Este artigo tem altíssima relevância conceitual e técnica para o TCC, pois comprova no estado da arte a eficácia exata do \textit{pipeline} que está sendo idealizado no trabalho: utilizar o ecossistema e algoritmos padrões de monitoramento para atuar como gatilhos, e acionar a inteligência do LLM estritamente como um motor de inferência da RCA (injetando-lhe o contexto mastigado e condensado). Além disso, o trabalho corrobora a premissa de que submeter dados cegamente aos modelos não funciona; o controle do limite do contexto, aliando as métricas com \textit{logs} relevantes (multimodal), constitui a chave metodológica que este TCC deverá focar para viabilizar os diagnósticos rápidos.
+
+\end{document}

@@ -1,0 +1,28 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{geometry}
+\geometry{a4paper, margin=2cm}
+
+\begin{document}
+
+\section*{Resumo: A Survey of AIOps in the Era of Large Language Models}
+\label{sec:resumo_survey_llm_aiops}
+
+\noindent\textbf{Referência:} LIU, J. et al. \textit{A Survey of AIOps in the Era of Large Language Models}. ACM Computing Surveys, 2024.
+
+\subsection*{Contexto e Problema}
+O estudo revisou 183 artigos sobre a aplicação de Modelos de Linguagem de Grande Escala (LLMs) em AIOps entre 2020 e 2024. Constatou-se que o cenário de dados mudou significativamente: o monitoramento tradicional dependia unicamente de dados gerados por máquinas (métricas, \textit{logs} e \textit{traces}), o que exigia intensa engenharia manual de \textit{features} para o uso de modelos de \textit{machine learning}. A integração dos LLMs resolve esse problema devido à sua capacidade de ler texto nativamente, permitindo injetar dados \textit{humanos}, como relatórios de incidentes, chamados históricos, documentação de arquitetura e código-fonte e cruzar essas informações com \textit{logs} de erros para compreender a fundo o contexto do sistema.
+
+\subsection*{Metodologia (Solução Proposta)}
+Na taxonomia das tarefas operacionais, a resolução de incidentes foi dividida em três etapas lógicas: Detecção de anomalias, Análise de Causa Raiz (RCA) e Remediação. A RCA evoluiu da simples categorização de erros para a geração de relatórios explicativos completos em linguagem natural. 
+Do ponto de vista prático de implementação, o estudo demonstra que treinar modelos gigantes do zero ou realizar \textit{fine-tuning} completo é inviável e caro. O que predomina de fato é a utilização de \textit{Retrieval-Augmented Generation} (RAG) para buscar incidentes semelhantes na base de conhecimento e \textit{In-Context Learning} (ICL), que injeta os dados da falha diretamente via engenharia de \textit{prompt}. Destaca-se também a Geração Aumentada por Ferramentas (\textit{Tool Augmented Generation}), onde o modelo consome APIs de monitoramento de forma autônoma para investigar o problema antes da resposta final.
+
+\subsection*{Resultados Obtidos (e Avaliação)}
+A pesquisa evidencia que a remediação 100\% automática (onde a IA age sozinha executando comandos) ainda é extremamente limitada e precisa de rigorosa validação prática. O principal gargalo do mercado recai sobre a avaliação da IA: métricas tradicionais falham em mensurar texto gerado, forçando as equipes a adotarem avaliação humana manual ou métricas semânticas complexas na tentativa de barrar as alucinações das respostas.
+
+\subsection*{Relação com este TCC}
+O principal ganho deste artigo para a pesquisa é a constatação técnica de que os LLMs apresentam alto custo financeiro, energético e de latência. O estudo argumenta que é computacionalmente inviável utilizar um LLM para ler métricas continuamente em tempo real. Esta conclusão \textbf{está fortemente alinhada com a arquitetura proposta neste TCC}: a abordagem adotada busca não substituir a \textit{stack} de monitoramento existente, mas sim focar na integração. Seguindo as direções da pesquisa, o projeto utilizará ferramentas consolidadas para a detecção de anomalias (Prometheus/Alertmanager), acionando o LLM como um \textit{middleware} restrito à etapa de RCA, otimizando o esforço cognitivo apenas quando o alerta é disparado.
+
+\end{document}
