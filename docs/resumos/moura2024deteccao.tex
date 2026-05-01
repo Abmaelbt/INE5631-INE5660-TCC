@@ -1,0 +1,27 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{geometry}
+\geometry{a4paper, margin=2cm}
+
+\begin{document}
+
+\section*{Resumo: Detecção e Interpretação de Anomalias em Logs de Sistemas de TI por meio de Inteligência Artificial}
+\label{sec:resumo_moura2024deteccao}
+
+\noindent\textbf{Referência:} MOURA, A. C. E. \textit{Detecção e Interpretação de Anomalias em Logs de Sistemas de TI por meio de Inteligência Artificial}. Dissertação (Mestrado Profissional em Computação Aplicada) -- Universidade de Brasília, Brasília, 2024.
+
+\subsection*{Contexto e Problema}
+A diversidade, o volume massivo e a natureza não estruturada dos registros de \textit{log} gerados por sistemas de TI representam um grande desafio para o monitoramento corporativo. Na rotina de uma grande instituição financeira (cenário do estudo), a análise manual dessas linhas de texto em busca de falhas e vulnerabilidades é um processo lento e oneroso, demandando soluções automatizadas que consigam não apenas apontar os erros matematicamente, mas explicar o seu real significado.
+
+\subsection*{Metodologia (Solução Proposta)}
+O trabalho propõe um fluxo de resolução dividido em duas grandes fases. Inicialmente, empregam-se técnicas de Processamento de Linguagem Natural (PLN) para o \textit{parsing} (estruturação) dos \textit{logs} aliados a algoritmos de aprendizado de máquina não supervisionado, com o fim de isolar e detectar os comportamentos anômalos. Após essa triagem inicial, a segunda fase utiliza Modelos de Linguagem de Grande Escala (LLMs) como motores semânticos: a IA generativa recebe as anomalias puras e interpreta o evento, convertendo códigos e exceções em explicações em linguagem natural sobre as prováveis causas raízes. O estudo testou oito algoritmos sob \textit{datasets} públicos (BGL) e reais (MCM).
+
+\subsection*{Resultados Obtidos (e Avaliação)}
+Na etapa de detecção, os modelos baseados em redes neurais apresentaram as maiores eficiências. Especificamente, os algoritmos \textit{Self-Organizing Map} (SOM) e \textit{Autoencoders} (AE) alcançaram \textit{F1-Score} de 0,86 e 0,80, respectivamente, quando aplicados aos \textit{logs} reais da instituição financeira. Além da triagem estatística, a validação prática demonstrou que repassar essas anomalias filtradas para a interpretação de um LLM acelerou drasticamente o entendimento humano das falhas, confirmando o potencial de injetar a IA na resolução de incidentes complexos.
+
+\subsection*{Relação com este TCC}
+Esta dissertação é uma das referências acadêmicas nacionais mais valiosas para a pesquisa do TCC. Ela fundamenta, na prática e em um ambiente corporativo crítico, a exata arquitetura conceitual que estamos defendendo: a separação de responsabilidades. O estudo de Moura (2024) consolida a visão de que LLMs não devem ser consumidos lendo o fluxo de \textit{logs} em tempo real para achar problemas (tarefa ideal para ferramentas de monitoramento), mas devem atuar na camada de interpretação e Análise de Causa Raiz (RCA). É uma base perfeita para validar o \textit{middleware} em desenvolvimento, focando a inteligência artificial generativa na tradução de sintomas isolados em contextos acionáveis de resolução.
+
+\end{document}

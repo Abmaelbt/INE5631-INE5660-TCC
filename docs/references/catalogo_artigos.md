@@ -5,6 +5,7 @@
 - [AIOps Dataset/Logs](https://zenodo.org/records/6979726)
 - [Boutique Microservices Demo](https://github.com/GoogleCloudPlatform/microservices-demo)
 - [KeepHQ](https://github.com/keephq/keep)
+- [Stress-NG](https://github.com/ColinIanKing/stress-ng)
 
 ## 2. Bibliografia Oficial (Artigos e Teses)
 
