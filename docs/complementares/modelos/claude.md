@@ -91,3 +91,105 @@ O presente trabalho está organizado em sete capítulos. O Capítulo 1 apresenta
 | [Gartner, 2025] | Gartner. **AIOps (Artificial Intelligence for IT Operations)**. Gartner Glossary. Disponível em: https://www.gartner.com/en/information-technology/glossary/aiops-artificial-intelligence-operations. Acesso em: 2025. |
 | [Moura, 2024] | MOURA, Alysson Cristiano Estevam de. **Detecção e Interpretação de Anomalias em Logs de Sistemas de TI por meio de Inteligência Artificial**. Dissertação (Mestrado Profissional em Computação Aplicada) — Universidade de Brasília, Brasília, 2024. |
 | [survey_llm_aiops, 2024] | A Survey of AIOps in the Era of Large Language Models. ACM Computing Surveys, 2024. DOI: 10.1145/3746635. *(completar com autores após acesso ao artigo)* |
+
+
+
+# 2. Fundamentação Teórica
+
+## 2.1 Observabilidade
+
+A crescente complexidade dos sistemas de software modernos, especialmente aqueles baseados em arquiteturas de microsserviços e infraestruturas em nuvem, impôs novos desafios à engenharia de operações de TI. Nesse contexto, o conceito de observabilidade emergiu como um pilar fundamental para a compreensão do comportamento interno de sistemas a partir de seus dados externos [Wang et al., 2025]. Diferentemente do monitoramento tradicional — que verifica se um sistema está funcionando — a observabilidade busca responder *por que* ele se comporta de determinada maneira, permitindo diagnósticos mais precisos e ações mais eficazes diante de falhas [Zhang et al., 2025].
+
+A literatura consolidada na área estrutura a observabilidade em torno de três tipos fundamentais de dados de telemetria, coletivamente conhecidos como os três pilares da observabilidade: métricas, logs e rastros (*traces*) [Zhang et al., 2025; Wang et al., 2025]. Cada pilar captura uma dimensão distinta do comportamento do sistema e, quando correlacionados, fornecem uma visão abrangente e contextualizada do estado da infraestrutura.
+
+---
+
+### 2.1.1 Métricas
+
+As métricas são medições quantitativas coletadas continuamente de componentes da infraestrutura de TI, como uso de CPU, utilização de memória, I/O de disco, latência de rede e throughput [Zhang et al., 2025]. Por sua natureza numérica e temporal, constituem séries temporais que permitem a identificação de tendências, padrões sazonais e desvios em relação ao comportamento esperado do sistema.
+
+No contexto do presente trabalho, as métricas representam a principal fonte de dados para o disparo de alertas. O Prometheus — ferramenta *open source* amplamente adotada em ambientes *cloud* e considerada padrão de facto para coleta de métricas em infraestruturas baseadas em Kubernetes e AWS [Wang et al., 2025] — é responsável pela raspagem periódica de dados expostos por *exporters* instalados nas instâncias EC2. As métricas coletadas abrangem as quatro métricas douradas de infraestrutura: latência, tráfego, erros e saturação [Wang et al., 2025], mapeadas operacionalmente para CPU, memória, disco e rede.
+
+O modelo de alerta adotado, baseado em limiares estáticos (*threshold-based alerting*), é reconhecido na literatura como insuficiente para ambientes dinâmicos e distribuídos [Wang et al., 2025; Zhang et al., 2025]. É justamente essa limitação que motiva a integração com modelos de linguagem: ao receber um alerta do Alertmanager — componente responsável pelo roteamento e notificação de alertas do Prometheus —, o sistema proposto não apenas registra a ocorrência, mas busca contextualizar a métrica anômala com outros dados de telemetria para gerar um diagnóstico de causa raiz.
+
+---
+
+### 2.1.2 Logs
+
+Os logs são registros detalhados e sequenciais de eventos que ocorrem dentro do sistema, abrangendo mensagens de erro, registros de transações, atividades de componentes e operações de infraestrutura [Zhang et al., 2025]. Sua natureza predominantemente não estruturada — composta por texto livre gerado por aplicações, sistemas operacionais e serviços — os torna ao mesmo tempo ricos em informação contextual e desafiadores para análise automatizada.
+
+Wang et al. (2025) descrevem os logs como eventos estruturados e semiestruturados emitidos por código de aplicação e componentes de infraestrutura, destacando a importância da correlação entre logs e rastros de requisição para vincular entradas individuais a execuções específicas. Essa correlação é especialmente relevante em ambientes de microsserviços, onde uma única falha pode propagar mensagens de erro em múltiplos serviços simultaneamente.
+
+No presente trabalho, o Loki — componente do *stack* LGTM responsável pelo armazenamento e indexação de logs — é utilizado como fonte secundária de contexto para o sistema de RCA. Quando um alerta é disparado pelo Prometheus, o *middleware* desenvolvido consulta a API do Loki para recuperar os registros de log dos serviços afetados no intervalo de tempo correspondente ao incidente. Essa janela temporal de coleta — tipicamente ±15 minutos ao redor do evento detectado, conforme proposto por Wang et al. (2025) — reduz significativamente o volume de dados sem comprometer a completude do contexto diagnóstico.
+
+A capacidade dos LLMs de processar dados não estruturados como logs sem extração prévia de *features* é destacada por Zhang et al. (2025) como uma das vantagens centrais dessa abordagem em relação aos métodos tradicionais de AIOps, que exigem extenso pré-processamento e são pouco generalizáveis a diferentes formatos de log.
+
+---
+
+### 2.1.3 Rastros (*Traces*)
+
+Os rastros capturam a sequência completa de operações ou transações que uma requisição percorre em um sistema distribuído [Zhang et al., 2025]. Em arquiteturas de microsserviços, uma única requisição do usuário pode atravessar dezenas de serviços antes de ser respondida. Os rastros — compostos por *spans* que representam operações individuais, anotados com informações de tempo, metadados e relações causais — oferecem visibilidade sobre as interações entre serviços, auxiliando na identificação de gargalos de desempenho, dependências e causas raiz de falhas em componentes específicos [Wang et al., 2025].
+
+Wang et al. (2025) descrevem a construção de grafos dinâmicos de dependência de serviços a partir de rastros distribuídos, nos quais nós representam instâncias de microsserviços e arestas codificam relações de chamada ponderadas por frequência e latência. Redes neurais de grafos analisam essas estruturas para identificar padrões anômalos nas interações entre serviços.
+
+No contexto deste trabalho, os rastros representam um dado de telemetria complementar, disponível por meio do componente Tempo do *stack* LGTM. Entretanto, sua integração com LLMs permanece como uma das fronteiras abertas da área — Zhang et al. (2025) identificam a ausência de trabalhos que utilizem dados de rastros de forma eficaz em abordagens baseadas em LLMs como uma das principais lacunas da literatura atual. Dessa forma, o presente trabalho delimita seu escopo ao uso de métricas e logs como fontes primárias de contexto para o sistema de RCA, apontando a integração com rastros como direção para trabalhos futuros.
+
+---
+
+### 2.1.4 O *stack* LGTM e o padrão OpenTelemetry
+
+A correlação eficaz dos três pilares de observabilidade exige uma infraestrutura de coleta, armazenamento e consulta integrada. O OpenTelemetry emergiu como o padrão de facto para observabilidade em ambientes *cloud-native*, fornecendo instrumentação independente de fornecedor para coleta unificada de métricas, logs e rastros [Wang et al., 2025]. O projeto é mantido pela Cloud Native Computing Foundation (CNCF) e adotado amplamente pela indústria como base para pipelines de telemetria interoperáveis.
+
+No presente trabalho, o *stack* LGTM — acrônimo para Loki, Grafana, Tempo e Mimir — é utilizado como plataforma de observabilidade *open source*, complementado pelo Prometheus para coleta de métricas e pelo Alertmanager para roteamento de alertas. Essa combinação de ferramentas constitui uma alternativa consolidada e sem custo de licenciamento às plataformas comerciais de observabilidade, viabilizando a proposta deste trabalho em ambientes corporativos com restrições orçamentárias.
+
+O Grafana, componente de visualização do *stack*, serve como interface de acompanhamento do sistema de monitoramento e ponto de integração para notificações, enquanto o Alertmanager é configurado como *webhook* de entrada para o *middleware* Python desenvolvido neste trabalho — recebendo alertas estruturados e iniciando o pipeline de coleta de contexto e geração de diagnóstico pelo LLM.
+
+A Figura 2.1 ilustra a relação entre os componentes do *stack* de observabilidade e o sistema proposto neste trabalho.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                  Stack de Observabilidade               │
+│                                                         │
+│   Instâncias EC2                                        │
+│   ┌──────────┐    métricas    ┌───────────┐            │
+│   │ Exporters│ ─────────────► │ Prometheus│            │
+│   └──────────┘                └─────┬─────┘            │
+│                                     │ alerta            │
+│   ┌──────────┐     logs       ┌─────▼──────────┐       │
+│   │  Serviços│ ─────────────► │  Alertmanager  │       │
+│   └──────────┘                └────────┬───────┘       │
+│                                        │ webhook        │
+│   ┌──────────┐     traces     ┌────────▼───────┐       │
+│   │  Loki    │◄───────────────│   Middleware   │       │
+│   │  Tempo   │  contexto      │    (Python)    │       │
+│   └──────────┘ ◄──────────────└────────┬───────┘       │
+│                                        │ prompt         │
+│                               ┌────────▼───────┐       │
+│                               │   LLM (local   │       │
+│                               │   ou via API)  │       │
+│                               └────────┬───────┘       │
+│                               diagnóstico em            │
+│                               linguagem natural         │
+└─────────────────────────────────────────────────────────┘
+```
+
+*Figura 2.1: Relação entre o stack de observabilidade e o sistema proposto.*
+
+---
+
+### 2.1.5 Limitações do monitoramento baseado em limiares
+
+O modelo tradicional de monitoramento, baseado em limiares estáticos para disparo de alertas, apresenta limitações estruturais que motivam diretamente a proposta deste trabalho. Wang et al. (2025) destacam que abordagens baseadas em regras predefinidas e alertas por limiar têm dificuldades em lidar com a natureza dinâmica e complexa dos sistemas *cloud-native*. O volume massivo de dados de telemetria — métricas, logs e rastros distribuídos — gerado por arquiteturas de microsserviços representa uma carga cognitiva substancial para operadores humanos.
+
+Zhang et al. (2025) complementam essa análise ao identificar cinco limitações centrais das abordagens tradicionais de AIOps: a necessidade de engenharia de *features* complexa, a falta de generalidade entre plataformas, a ausência de flexibilidade entre tarefas, a adaptabilidade limitada diante de mudanças no sistema e os níveis restritos de automação. Essas limitações são especialmente críticas em contextos onde a resposta a incidentes deve ocorrer em segundos e o conhecimento sobre a infraestrutura específica nem sempre está disponível no momento da falha.
+
+É nesse espaço — entre a riqueza de dados disponíveis nas ferramentas de observabilidade e a capacidade humana de interpretá-los sob pressão — que o presente trabalho propõe a aplicação de Modelos de Linguagem de Grande Escala para automação e enriquecimento da Análise de Causa Raiz.
+
+---
+
+## Referências desta seção
+
+| Chave | Referência |
+|---|---|
+| [Zhang et al., 2025] | ZHANG, Lingzhe et al. **A Survey of AIOps in the Era of Large Language Models**. Journal of the ACM, v. 37, n. 4, art. 111, ago. 2025. arXiv:2507.12472v1. |
+| [Wang et al., 2025] | WANG, Chen et al. **Integrating Large Language Models with Cloud-Native Observability for Automated Root Cause Analysis and Remediation**. In: AISNS 2025 — 3rd International Conference on Artificial Intelligence, Systems and Network Security, Xiangtan, China. ACM, 2025. DOI: 10.1145/3797161.3797213. |
