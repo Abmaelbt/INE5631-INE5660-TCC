@@ -32,30 +32,71 @@ Este capítulo apresenta os conceitos estruturais necessários para a compreens�
 
 2.1 Observabilidade em Arquiteturas Nativas em Nuvem
 
-Historicamente, o gerenciamento de infraestrutura de Tecnologia da Informação (TI) operava de maneira reativa, focado no monitoramento clássico de servidores físicos ou máquinas virtuais monolíticas. O objetivo principal era responder à pergunta binária: "O sistema está funcionando?". Contudo, a transição para arquiteturas nativas em nuvem (cloud-native), compostas por centenas de microsserviços efêmeros e contêineres, tornou essa abordagem insuficiente. Nesse novo paradigma, a pergunta fundamental mudou para: "Por que o sistema não está funcionando como deveria?" (WANG et al., 2025).
+Historicamente, o gerenciamento de infraestrutura de Tecnologia da Informação (TI) operava de maneira reativa, focado no monitoramento clássico de servidores físicos ou máquinas virtuais monolíticas. O objetivo principal era responder à pergunta binária: "O sistema está funcionando?". Contudo, a transição para arquiteturas nativas em nuvem (cloud-native), compostas por centenas de microsserviços efêmeros e contêineres, tornou essa abordagem insuficiente. Nesse novo paradigma, a complexidade arquitetural exige que a pergunta mude para: "Por que o sistema não está funcionando como deveria?" (WANG et al., 2025; BEYER et al., 2016).
 
-Para responder a essa questão, o conceito de Observabilidade tornou-se o padrão da indústria. Diferente do monitoramento tradicional — que se baseia em painéis de controle estáticos —, a observabilidade é a capacidade de inferir o estado interno de um sistema complexo exclusivamente a partir de suas saídas externas (telemetria).
+Para responder a essa questão, o conceito de Observabilidade tornou-se o padrão da indústria. Diferente do monitoramento tradicional — que se baseia em painéis de controle estáticos predefinidos —, a observabilidade, termo emprestado da teoria de controle, é a capacidade de inferir o estado interno de um sistema complexo exclusivamente a partir do conhecimento de suas saídas externas, ou seja, de sua telemetria (NIEDERMAYR et al., 2019).
 
 2.1.1 Os Três Pilares da Observabilidade
 
-Para que um sistema seja considerado "observável", ele deve exportar dados de telemetria que permitam a correlação de eventos sistêmicos. Segundo a literatura especializada (ZHANG et al., 2025), esses dados são categorizados em três pilares fundamentais:
+Para que um sistema seja considerado "observável", ele deve exportar dados de telemetria estruturados que permitam a correlação de eventos sistêmicos. A literatura especializada e as práticas de Engenharia de Confiabilidade de Sites (SRE) consolidaram esses dados em três pilares fundamentais (ZHANG et al., 2025):
 
-Métricas (Metrics): São representações quantitativas do estado do sistema em um momento específico, como uso de CPU, consumo de memória ou taxa de requisições por segundo. Ferramentas como o Prometheus são otimizadas para coletar e armazenar métricas com alta eficiência temporal. Por serem dados estruturados, as métricas são ideais para disparar alertas baseados em limiares (ex: "Uso de CPU > 90%"), constituindo a etapa primária de detecção de anomalias (Failure Perception).
+Métricas (Metrics): São representações quantitativas do estado do sistema agregadas em intervalos de tempo, como uso de CPU, consumo de memória ou taxa de requisições por segundo. Ferramentas como o Prometheus são otimizadas para coletar e armazenar métricas com alta eficiência, sendo ideais para disparar alertas baseados em limiares e constituindo a etapa primária de detecção de anomalias (Failure Perception) (TURNBULL, 2018).
 
-Logs: Consistem em registros textuais discretos e imutáveis sobre eventos que ocorreram dentro da aplicação. Ao contrário das métricas, os logs contêm contexto detalhado e frequentemente não estruturado (exceções, stack traces, mensagens de banco de dados). Ferramentas como o Loki (da pilha LGTM) agregam esses textos. O log é o principal insumo para entender o comportamento da falha.
+Logs: Consistem em registros textuais discretos e imutáveis sobre eventos que ocorreram dentro da aplicação. Ao contrário das métricas, os logs contêm contexto detalhado e frequentemente não estruturado (exceções, stack traces, mensagens de banco de dados). O log atua como o principal insumo investigativo para entender a natureza comportamental da falha (MOURA, 2024).
 
-Traces (Rastreamento Distribuído): Em um ambiente de microsserviços, uma única requisição de usuário pode passar por dezenas de serviços diferentes. O trace mapeia todo o ciclo de vida dessa requisição, permitindo identificar exatamente em qual nó da rede ocorreu a latência ou o erro.
+Traces (Rastreamento Distribuído): Em um ecossistema de microsserviços, o ciclo de vida de uma única requisição de usuário frequentemente transita por dezenas de serviços diferentes. O trace (como implementado no sistema Dapper do Google) mapeia essa trajetória, permitindo identificar o nó exato da rede responsável pela latência ou erro em cadeias de dependência complexas (SIGELMAN et al., 2010).
+
+A Tabela 1 sintetiza as características fundamentais de cada pilar da observabilidade, destacando suas estruturas de dados e a respectiva finalidade operacional no contexto deste trabalho.
+
+Tabela 1 – Síntese dos Três Pilares da Observabilidade
+![alt text](image.png)
+
+Fonte: Autoria própria (2026).
 
 2.1.2 O Paradoxo dos Dados e a Fadiga de Alertas
 
-Embora a adoção de ferramentas padrão (como a pilha Prometheus e LGTM) tenha resolvido o problema da coleta de telemetria, ela introduziu um novo gargalo operacional: a explosão volumétrica de dados.
+A adoção do padrão de observabilidade e de ecossistemas maduros, como a pilha LGTM (Loki, Grafana, Tempo, Mimir), solucionou o desafio da coleta de telemetria, mas introduziu um novo gargalo operacional: a explosão volumétrica de dados.
 
-Em cenários reais de produção, uma única falha em um banco de dados pode gerar uma reação em cadeia, disparando milhares de alertas simultâneos em todos os microsserviços dependentes. Esse fenômeno, conhecido como "fadiga de alertas" (alert fatigue), sobrecarrega as equipes de Engenharia de Confiabilidade (SRE) (WANG et al., 2025). Os engenheiros são forçados a realizar a correlação manual de métricas, logs e traces espalhados por diversos dashboards para tentar encontrar a origem do problema.
+Em cenários produtivos reais, uma única falha em um componente basilar (como um banco de dados) deflagra uma cascata de falhas de conectividade, disparando milhares de notificações simultâneas em todos os microsserviços dependentes. Esse fenômeno, cunhado como "fadiga de alertas" (alert fatigue), deteriora a capacidade de resposta das equipes de operações, que perdem tempo crítico tentando correlacionar manualmente os sinais vitais espalhados por diversos painéis de controle (WANG et al., 2025).
 
-Moura (2024) destaca em seu estudo que os algoritmos tradicionais de detecção são excelentes e eficientes na triagem matemática do tráfego anômalo (Métricas), mas falham gravemente em interpretar o contexto semântico do erro (Logs). Consequentemente, o Tempo Médio de Reparação (MTTR) eleva-se drasticamente não porque a falha não foi detectada, mas porque a etapa de Análise de Causa Raiz (RCA) exige um esforço cognitivo e investigativo que as ferramentas de observabilidade convencionais não conseguem fornecer.
+A deficiência reside no fato de que os sistemas tradicionais de alerta são estritamente matemáticos. Eles são eficientes na detecção inicial baseada em limiares (métricas), porém falham gravemente na interpretação do contexto semântico da ocorrência. Como resultado, a Análise de Causa Raiz (RCA) converte-se em um extenuante exercício de correlação humana (MOURA, 2024), elevando drasticamente o Tempo Médio de Reparação (MTTR).
+
+(INSERIR AQUI A FIGURA 1 CRIADA NO DRAW.IO - ILUSTRANDO A CASCATA DE FALHAS)
 
 2.1.3 Relacionamento com a Arquitetura Proposta
 
-É exatamente nessa lacuna estrutural que a prova de conceito (PoC) deste trabalho se insere. A observabilidade moderna resolveu a etapa de Detecção com maestria matemática (via Prometheus/Alertmanager). Contudo, a etapa de Diagnóstico (RCA) continua sendo um gargalo manual.
+É precisamente nesta lacuna arquitetural que a prova de conceito (PoC) desenvolvida neste trabalho se insere. A observabilidade clássica solucionou a etapa de Detecção com alta performance e baixo custo computacional (via Prometheus e Alertmanager). No entanto, o Diagnóstico (RCA) permanece como o gargalo dependente de esforço cognitivo.
 
-Conforme apontado pelo survey de Zhang et al. (2025), a tentativa de usar Modelos de Linguagem para ficar lendo todo o tráfego normal em tempo real é computacional e financeiramente inviável. Portanto, justifica-se arquiteturalmente o uso das ferramentas de observabilidade clássicas como a "primeira linha de defesa" para identificar a anomalia através de regras estáticas. O LLM atua apenas de forma cirúrgica na etapa subsequente, recebendo os alertas estruturados e cruzando-os com os logs para gerar diagnósticos legíveis, mitigando o esforço cognitivo humano sem comprometer a latência da detecção inicial.
+Tentativas de empregar Inteligência Artificial para substituir todo o pipeline de monitoramento, analisando o tráfego normal em tempo real, mostram-se financeiramente proibitivas e ineficientes devido à latência de inferência (ZHANG et al., 2025). Dessa forma, a arquitetura proposta sustenta o paradigma híbrido: mantém as ferramentas de observabilidade determinísticas como a linha de frente para a triagem primária da anomalia e aciona as capacidades de raciocínio lógico dos Modelos de Linguagem (LLMs) exclusivamente na etapa investigativa do RCA. Nesta fase, o sistema injeta os alertas e o contexto dos logs no modelo, delegando a correlação de dados complexos para gerar um diagnóstico sintético e imediatamente acionável.
+
+2.2 Inteligência Artificial para Operações de TI (AIOps)
+
+Com a explosão volumétrica de dados gerados pelos pilares da observabilidade, a dependência exclusiva da análise humana tornou-se o principal gargalo para a garantia de disponibilidade dos serviços. Para mitigar esse problema, a indústria cunhou o termo AIOps (Artificial Intelligence for IT Operations), introduzido pelo Gartner em 2016, que designa a aplicação de técnicas de Machine Learning (ML) para automatizar a detecção, o diagnóstico e a resolução de incidentes.
+
+2.2.1 As Limitações do AIOps Tradicional
+
+A primeira geração de ferramentas de AIOps baseava-se estritamente em algoritmos clássicos de aprendizado de máquina. Embora eficientes na identificação de desvios matemáticos em séries temporais (anomalias em métricas), essas abordagens esbarraram em limitações severas quando aplicadas a ambientes de produção dinâmicos:
+
+A Caixa Preta do Diagnóstico: A maior falha do ML clássico no contexto de operações é a incapacidade de explicar seus resultados. O modelo aponta a anomalia matemática, mas não fornece uma narrativa compreensível sobre as correlações causais.
+
+Falta de Generalização: Um modelo treinado para identificar falhas em um serviço perdia sua eficácia (concept drift) assim que o código sofria uma atualização, exigindo retreinamentos constantes e custosos.
+
+Incapacidade Semântica: Modelos tradicionais não compreendem texto bruto nativamente. A extração de informações de logs exigia complexos pipelines de log parsing baseados em expressões regulares, que quebravam constantemente (MOURA, 2024).
+
+2.2.2 A Evolução com Modelos de Linguagem de Grande Escala (LLMs)
+
+A introdução de Modelos de Linguagem de Grande Escala (LLMs) redefiniu as capacidades do AIOps, preenchendo a principal lacuna deixada pelo ML tradicional: a interpretação semântica de logs e traces (ZHANG et al., 2025).
+
+Diferente de modelos restritos a uma única tarefa matemática, os LLMs são redes neurais baseadas na arquitetura Transformer, pré-treinadas em vastos volumes de dados textuais — incluindo código-fonte, manuais de infraestrutura e fóruns de discussão de TI. Isso lhes confere uma capacidade ímpar de correlacionar anomalias de infraestrutura com explicações legíveis em linguagem natural.
+
+A aplicação pragmática dessas ferramentas no contexto operacional moderno não exige o retreinamento do modelo do zero, baseando-se em técnicas de inferência direcionada:
+
+Aprendizado em Contexto (In-Context Learning - ICL): É a capacidade do LLM de adaptar-se a uma tarefa baseando-se exclusivamente nas instruções e exemplos fornecidos no prompt no momento da requisição. Essa técnica elimina a dependência de ciclos de fine-tuning e permite que o modelo interprete formatos de logs proprietários dinamicamente.
+
+Raciocínio em Cadeia (Chain-of-Thought - CoT): Técnica de estruturação de prompt que força a inteligência artificial a decompor o processo investigativo em etapas lógicas e explícitas (ex: "1. Avalie a métrica -> 2. Busque o erro no log -> 3. Sugira a causa"). Segundo Wang et al. (2025), o uso de CoT no cruzamento de dados de telemetria reduz drasticamente o risco de "alucinações" nos diagnósticos.
+
+2.2.3 O Paradigma Híbrido: Detecção vs. Interpretação
+
+Apesar de suas notáveis capacidades na Análise de Causa Raiz (RCA), o uso operacional de LLMs introduz desafios estruturais. Devido à sua natureza arquitetural, LLMs possuem alta latência de inferência e custo computacional substancial. Portanto, a literatura técnica condena o uso dessas redes para monitoramento contínuo em tempo real (ZHANG et al., 2025).
+
+A resposta da indústria a esse desafio — e que fundamenta a arquitetura proposta neste trabalho — é a consolidação de um paradigma híbrido. Ferramentas determinísticas de observabilidade (como o Prometheus) são mantidas na linha de frente para a fase de Detecção (Failure Perception), operando de forma barata e em milissegundos. O acionamento do LLM ocorre apenas de forma reativa, atuando exclusivamente na fase de RCA. Nessa etapa, a IA recebe o alerta estruturado e os logs filtrados da janela de tempo da falha, utilizando sua capacidade semântica para gerar o diagnóstico final sem sobrecarregar a infraestrutura de monitoramento.

@@ -10,7 +10,15 @@ Historicamente, o gerenciamento de infraestrutura de Tecnologia da Informação 
 
 A crescente complexidade desses sistemas impôs novos desafios à engenharia de operações. Nesse contexto, o conceito de observabilidade emergiu como um pilar fundamental para a compreensão do comportamento interno de sistemas a partir puramente de suas saídas externas \cite{notaro2021survey}. Diferentemente do monitoramento tradicional, baseado em painéis de controle estáticos, a observabilidade permite diagnósticos precisos e ações eficazes diante de falhas complexas.
 
-Para que um sistema seja considerado observável, a literatura consolidada o estrutura em torno de três tipos de dados de telemetria, conhecidos como os três pilares da observabilidade: métricas, \textit{logs} e rastros (\textit{traces}) \cite{zhang2024survey}. Cada pilar captura uma dimensão distinta do sistema e, quando correlacionados, fornecem uma visão abrangente do estado da infraestrutura.
+Para que um sistema seja considerado observável, a literatura consolidada o estrutura em torno de três tipos de dados de telemetria, conhecidos como os três pilares da observabilidade: métricas, \textit{logs} e rastros (\textit{traces}) \cite{zhang2024survey}. Cada pilar captura uma dimensão distinta do sistema e, quando correlacionados, fornecem uma visão abrangente do estado da infraestrutura. A interseção conceitual entre estes três pilares é ilustrada na Figura \ref{fig:pilares_venn}.
+
+\begin{figure}[htb]
+    \centering
+    \caption{Interseção entre os três pilares da observabilidade.}
+    \includegraphics[width=0.85\textwidth]{pictures/logs_metrics_and_traces_82e7d5af44.png}
+    \fonte{OpenObserve (2024).}
+    \label{fig:pilares_venn}
+\end{figure}
 
 \subsection{Métricas (\textit{Metrics})}
 As métricas são medições quantitativas coletadas continuamente de componentes da infraestrutura, como uso de CPU, utilização de memória, I/O de disco e taxa de requisições por segundo. Por sua natureza numérica e estruturada, constituem séries temporais que permitem a identificação de tendências, padrões sazonais e desvios, sendo extremamente eficientes em termos de armazenamento computacional.
@@ -27,11 +35,115 @@ Em ambientes distribuídos, uma requisição transita por diversos serviços at�
 
 Apesar de sua enorme importância descritiva, a integração técnica de grafos de \textit{traces} diretos para modelos LLMs ainda representa um desafio emergente na literatura de AIOps \cite{zhang2024survey}. Portanto, como foco imediato de resolução rápida, a literatura prioriza a correlação entre as métricas e os \textit{logs}.
 
+A Tabela \ref{tab:sintese_pilares} sintetiza as características fundamentais de cada pilar da observabilidade, destacando suas finalidades operacionais no contexto desta pesquisa.
+
+\begin{table}[htb]
+    \centering
+    \caption{Síntese dos três pilares da observabilidade.}
+    \label{tab:sintese_pilares}
+    \begin{tabular}{p{1.4cm} p{2.5cm} p{3cm} p{3.2cm} p{3.8cm}}
+        \hline
+        \textbf{Pilar} & \textbf{Estrutura de Dados} & \textbf{Principal Ferramenta} & \textbf{Propósito Operacional} & \textbf{Função na Arquitetura Proposta} \\ 
+        \hline
+        \textbf{Métricas} & Numérica, contínua & Prometheus & Monitoramento de saúde, alertas rápidos & Detecção primária (gatilho da falha) \\ 
+        \textbf{Logs} & Textual, discreta & Loki / Elasticsearch & Registro de eventos, diagnóstico detalhado & Contextualização (insumo semântico para RCA) \\ 
+        \textbf{Traces} & Relacional, topológica & Tempo / Jaeger & Identificação de gargalos na rede & Mapeamento da cadeia de dependências \\ 
+        \hline
+    \end{tabular}
+    \fonte{Autoria própria (2026).}
+\end{table}
+
 \subsection{O Paradoxo dos Dados e a Fadiga de Alertas}
 \label{subsec:limitacoes_monitoramento}
 
-A adoção do padrão OpenTelemetry e da pilha LGTM (Loki, Grafana, Tempo, Mimir) solucionou o desafio tecnológico da coleta de telemetria \cite{wang_2025_integrating}. Entretanto, essa mesma solução fomentou um novo gargalo operacional: a explosão volumétrica de dados sem correlação nativa.
+A adoção do padrão OpenTelemetry e da pilha LGTM (Loki, Grafana, Tempo, Mimir) solucionou o desafio tecnológico da coleta de telemetria \cite{wang_2025_integrating}. A arquitetura típica de componentes dessa pilha pode ser observada na Figura \ref{fig:arquitetura_lgtm}.
+
+\begin{figure}[htb]
+    \centering
+    \caption{Componentes da pilha de observabilidade LGTM e OpenTelemetry.}
+    \includegraphics[width=0.7\textwidth]{pictures/docker-image_components.png}
+    \fonte{Grafana Labs (2024).}
+    \label{fig:arquitetura_lgtm}
+\end{figure}
+
+Entretanto, essa mesma solução fomentou um novo gargalo operacional: a explosão volumétrica de dados sem correlação nativa.
 
 O modelo clássico lida muito mal com falhas sistêmicas dinâmicas. Um incidente crítico dispara uma alta densidade de notificações desorganizadas, causando o fenômeno comumente classificado na indústria como fadiga de alertas (\textit{alert fatigue}) \cite{notaro2021survey}. A equipe de \textit{Site Reliability Engineering} (SRE) se vê obrigada a navegar freneticamente por dezenas de painéis para decifrar a raiz do problema.
 
-Como evidenciado pelos estudos de \citeonline{moura2024deteccao}, os algoritmos de observabilidade atuais são metodologicamente impecáveis na triagem matemática da anomalia (a detecção em tempo real), porém desprovidos de capacidade de interpretação semântica da falha (a investigação textual do erro). Como consequência, o Tempo Médio de Resolução (MTTR) explode durante a fase de Análise de Causa Raiz (RCA). É exatamente nesta lacuna investigativa que a injeção cirúrgica de Modelos de Linguagem de Grande Escala (LLMs) se posiciona como a evolução arquitetural definitiva para sistemas de operações.
+Como evidenciado pelos estudos de \citeonline{moura2024deteccao}, os algoritmos de observabilidade atuais são metodologicamente impecáveis na triagem matemática da anomalia (a detecção em tempo real), porém desprovidos de capacidade de interpretação semântica da falha (a investigação textual do erro). Como consequência, o Tempo Médio de Resolução (MTTR) explode durante a fase de Análise de Causa Raiz (RCA). É exatamente nesta lacuna investigativa que a aplicação de técnicas de inteligência artificial às operações de TI se posiciona como evolução arquitetural para sistemas de operações, conforme discutido na seção a seguir.
+
+\section{Inteligência Artificial para Operações de TI (AIOps)}
+\label{sec:aiops}
+
+\subsection{Origem e Definição}
+
+O termo AIOps (\textit{Artificial Intelligence for IT Operations}) foi cunhado pelo Gartner em 2016 e consolidado como categoria de mercado em seu \textit{Market Guide for AIOps Platforms} \cite{prasad2018market}. O conceito descreve a aplicação de técnicas de inteligência artificial e aprendizado de máquina para automatizar e aprimorar processos de operações de TI, incluindo correlação de eventos, detecção de anomalias e determinação de causalidade \cite{notaro2021survey}.
+
+\citeonline{zhang2024survey} ampliam essa definição ao contextualizar o AIOps no cenário atual de sistemas distribuídos em larga escala, descrevendo-o como o uso de técnicas de aprendizado de máquina e aprendizado profundo para processar grandes volumes de dados gerados por ferramentas operacionais e infraestrutura, viabilizando a detecção, o diagnóstico e a resolução de problemas em tempo real.
+
+A motivação central para o AIOps reside na incapacidade humana de processar, em tempo real, o volume massivo de dados de telemetria gerado por sistemas modernos. Conforme descrevem \citeonline{wang_2025_integrating}, o volume de dados de telemetria gerado por arquiteturas de microsserviços representa uma carga cognitiva substancial para operadores humanos, que frequentemente precisam correlacionar fontes de dados díspares, identificar causas raiz e implementar ações de remediação sob condições de alta pressão temporal.
+
+\subsection{Taxonomia de Tarefas em AIOps}
+
+A literatura organiza as tarefas de AIOps em três estágios sequenciais e interdependentes, conforme sistematizado por \citeonline{zhang2024survey}. A Figura \ref{fig:aiops_gartner} ilustra essa taxonomia no contexto de plataformas AIOps, evidenciando o ciclo entre observação, engajamento e automação.
+
+\begin{figure}[htb]
+    \centering
+    \caption{Plataforma AIOps habilitando \textit{insights} contínuos em operações de TI.}
+    \includegraphics[width=0.85\textwidth]{pictures/aiops_overview.png}
+    \fonte{Gartner (ID: 378587), adaptado por Pure Storage (2024).}
+    \label{fig:aiops_gartner}
+\end{figure}
+
+\begin{enumerate}
+    \item \textbf{\textit{Failure Perception}} (Percepção de Falhas): estágio inicial, responsável por detectar anomalias no sistema. Abrange subtarefas como prevenção de falhas, predição de falhas e detecção de anomalias. Neste estágio, o Prometheus desempenha papel central no presente trabalho, monitorando continuamente as métricas das instâncias EC2 e disparando alertas quando limiares predefinidos são excedidos.
+    \item \textbf{\textit{Root Cause Analysis}} (Análise de Causa Raiz): estágio intermediário e foco do presente trabalho. Uma vez detectada uma anomalia, este estágio identifica a localização e a natureza do problema por meio de análise automatizada. Subdivide-se em localização da falha (\textit{Failure Localization}), classificação da categoria da falha (\textit{Failure Category Classification}) e geração de relatório de causa raiz (\textit{Root Cause Report Generation}). Esta última subtarefa emergiu com a integração de LLMs e representa a contribuição central deste trabalho.
+    \item \textbf{\textit{Assisted Remediation}} (Remediação Assistida): estágio final, responsável por mitigar e resolver o problema identificado. \citeonline{wang_2025_integrating} demonstram que sistemas com remediação automatizada são capazes de resolver até 91\% dos incidentes sem intervenção humana, porém ressaltam que mecanismos de supervisão humana (\textit{human-in-the-loop}) permanecem essenciais para sistemas críticos.
+\end{enumerate}
+
+No presente trabalho, o escopo é deliberadamente delimitado ao estágio de RCA, mais especificamente à subtarefa de geração de relatório de causa raiz. O sistema não executa ações de remediação automática; o diagnóstico gerado pelo LLM é apresentado ao operador humano, que decide a ação a tomar. Essa delimitação é justificada por três razões: (1) a remediação automática em infraestrutura de produção exige validação extensiva e mecanismos de \textit{rollback} que estão fora do escopo de uma prova de conceito; (2) o foco no diagnóstico em linguagem natural representa, por si só, uma contribuição original na integração com o \textit{stack} Prometheus e LGTM; e (3) a remediação automática é apontada na literatura como a área com menor maturidade em AIOps com LLMs \cite{zhang2024survey}.
+
+\subsection{Limitações do AIOps Tradicional}
+\label{subsec:limitacoes_aiops}
+
+As abordagens tradicionais de AIOps, baseadas em aprendizado de máquina clássico e aprendizado profundo, desempenharam papel relevante na automação de operações de TI ao longo da última década. \citeonline{notaro2021survey} apresentam um panorama abrangente dessas abordagens, cobrindo técnicas de percepção de falhas, análise de causa raiz e remediação com algoritmos supervisionados, não supervisionados e de aprendizado por reforço.
+
+Entretanto, \citeonline{zhang2024survey} identificam cinco limitações estruturais que restringem a eficácia dessas abordagens em ambientes modernos:
+
+\begin{itemize}
+    \item \textbf{Necessidade de engenharia de \textit{features} complexa.} Métodos tradicionais exigem extenso pré-processamento e extração de características dos dados brutos. Sua capacidade de compreensão de dados não estruturados, como \textit{logs} em texto livre, é limitada, demandando \textit{pipelines} de transformação específicos para cada tipo de dado e sistema.
+    \item \textbf{Falta de generalidade entre plataformas.} Modelos treinados para um sistema específico degradam significativamente quando aplicados a sistemas diferentes ou quando o sistema original sofre alterações, mesmo que pequenas. Isso implica necessidade frequente de retreinamento, tornando as soluções pouco escaláveis em ambientes heterogêneos.
+    \item \textbf{Falta de flexibilidade entre tarefas.} Devido à especificidade do conhecimento e das saídas de cada modelo, abordagens tradicionais conseguem executar apenas uma tarefa por vez. Em cenários reais de RCA, múltiplos modelos precisam ser orquestrados simultaneamente para cobrir diferentes aspectos do diagnóstico.
+    \item \textbf{Adaptabilidade limitada.} Mudanças no sistema exigem retreinamento frequente para que os modelos se adaptem a novos dados e ambientes. Embora existam métodos de aprendizado \textit{online}, esse processo consome tempo e pode resultar em respostas atrasadas diante de eventos repentinos.
+    \item \textbf{Níveis restritos de automação.} Métodos baseados em aprendizado profundo apresentam capacidades relativamente limitadas de operação autônoma e tomada de decisão inteligente, ainda exigindo intervenção e configuração manual significativas \cite{survey_llm_aiops_2024}.
+\end{itemize}
+
+Como destacam \citeonline{moura2024deteccao}, a maior limitação prática do AIOps clássico no contexto de operações reside na incapacidade de explicar seus resultados. O modelo aponta a anomalia matemática, mas não fornece uma narrativa compreensível sobre as correlações causais que levaram ao incidente. Essa opacidade diagnóstica, combinada com a incapacidade nativa de processar texto livre de \textit{logs}, constitui o obstáculo semântico que motivou a adoção de modelos de linguagem para a tarefa de RCA.
+
+A Tabela \ref{tab:evolucao_aiops} sintetiza a evolução das abordagens de AIOps e posiciona o presente trabalho nesse contexto.
+
+\begin{table}[htb]
+    \centering
+    \caption{Evolução das abordagens de AIOps.}
+    \label{tab:evolucao_aiops}
+    \begin{tabular}{p{3.8cm} p{3.2cm} p{3.2cm} p{3.2cm}}
+        \hline
+        \textbf{Característica} & \textbf{AIOps Tradicional (ML/DL)} & \textbf{AIOps com LLMs} & \textbf{Este Trabalho} \\
+        \hline
+        Dados não estruturados & Requer pré-processamento & Processamento nativo & \textit{Logs} via Loki \\
+        Generalidade entre plataformas & Limitada & Alta & \textit{Stack} LGTM + AWS \\
+        Adaptação sem retreinamento & Exige retreinamento & Via RAG / \textit{Few-shot} & Injeção de contexto \\
+        Explicabilidade em linguagem natural & Ausente & Nativa & Diagnóstico em PT-BR \\
+        Execução local sem GPU dedicada & Viável & Depende do modelo & Ollama + API \textit{fallback} \\
+        \hline
+    \end{tabular}
+    \fonte{Autoria própria (2026).}
+\end{table}
+
+\subsection{AIOps no Contexto de Infraestrutura AWS e \textit{Stack Open Source}}
+
+A adoção de AIOps em ambientes corporativos enfrenta uma tensão recorrente entre capacidade técnica e viabilidade econômica. Soluções comerciais como Datadog AI Ops, Dynatrace Davis e AWS DevOps Guru oferecem funcionalidades avançadas de correlação e diagnóstico, porém com custos de licenciamento que as tornam inacessíveis para organizações de médio porte \cite{sharma2026top}. Adicionalmente, essas plataformas exigem o envio de dados operacionais para infraestruturas externas, o que pode representar impedimentos de conformidade e segurança da informação.
+
+No outro extremo, iniciativas \textit{open source} como o Keep (keephq) avançam na direção da correlação automatizada de alertas, porém com foco em sumarização e integração com APIs de LLMs externos, sem suporte nativo a execução local de modelos e sem integração profunda com dados de \textit{logs} para RCA \cite{bisht2025generative}.
+
+O presente trabalho posiciona-se nessa lacuna: propõe uma arquitetura \textit{open source}, construída sobre o \textit{stack} Prometheus e LGTM já amplamente adotado em ambientes AWS, que integra LLMs para diagnóstico de causa raiz em linguagem natural. A flexibilidade de implantação, suportando tanto execução local via Ollama quanto consumo de APIs de inferência como Groq e Gemini, torna a solução acessível a diferentes perfis de infraestrutura e orçamento, sem dependência de plataformas proprietárias.
