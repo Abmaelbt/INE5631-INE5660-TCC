@@ -100,3 +100,33 @@ Raciocínio em Cadeia (Chain-of-Thought - CoT): Técnica de estruturação de pr
 Apesar de suas notáveis capacidades na Análise de Causa Raiz (RCA), o uso operacional de LLMs introduz desafios estruturais. Devido à sua natureza arquitetural, LLMs possuem alta latência de inferência e custo computacional substancial. Portanto, a literatura técnica condena o uso dessas redes para monitoramento contínuo em tempo real (ZHANG et al., 2025).
 
 A resposta da indústria a esse desafio — e que fundamenta a arquitetura proposta neste trabalho — é a consolidação de um paradigma híbrido. Ferramentas determinísticas de observabilidade (como o Prometheus) são mantidas na linha de frente para a fase de Detecção (Failure Perception), operando de forma barata e em milissegundos. O acionamento do LLM ocorre apenas de forma reativa, atuando exclusivamente na fase de RCA. Nessa etapa, a IA recebe o alerta estruturado e os logs filtrados da janela de tempo da falha, utilizando sua capacidade semântica para gerar o diagnóstico final sem sobrecarregar a infraestrutura de monitoramento.
+
+2.3 Large Language Models (LLMs) em Operações
+
+A transição de algoritmos estatísticos puros para Modelos de Linguagem de Grande Escala (LLMs) representa o atual estado da arte no campo de AIOps. Diferente dos sistemas de Machine Learning tradicionais, que exigiam rigorosa engenharia de características (feature engineering) para converter logs textuais em matrizes numéricas, os LLMs atuam como motores de raciocínio cognitivo, capazes de interpretar o jargão técnico, arquiteturas de infraestrutura e mensagens de erro nativamente em linguagem natural (AHMED et al., 2023).
+
+2.3.1 Arquitetura Transformer e o Ecossistema de LLMs
+
+A capacidade interpretativa dos LLMs advém de sua arquitetura base, o Transformer, especificamente de sua topologia baseada apenas em decodificadores (Decoder-only). O mecanismo de "Atenção Plena" (Self-Attention) inerente a essa arquitetura permite que o modelo pondere a relevância de diferentes palavras e símbolos em uma longa sequência de texto. No contexto de observabilidade, isso significa que a IA consegue relacionar uma métrica de CPU_Usage no início de um alerta com uma exceção de banco de dados (TimeoutException) dezenas de linhas abaixo em um arquivo de log, extraindo a correlação causal.
+
+A adoção destas ferramentas na resolução de incidentes divide-se atualmente em dois paradigmas principais de inferência, cada um com trade-offs específicos para ambientes corporativos corporativos (ZHANG et al., 2024):
+
+Modelos Comerciais (APIs de Nuvem): Soluções fechadas (closed-source), como o GPT-4o (OpenAI) e Gemini (Google), que rodam em infraestruturas de hiperescala e contam com centenas de bilhões de parâmetros. Oferecem capacidade de raciocínio incomparável e baixa fricção de desenvolvimento. No entanto, exigem o envio de dados telemétricos (frequentemente contendo IPs, credenciais mascaradas e arquiteturas internas) para servidores de terceiros, esbarrando em rígidas políticas de conformidade e privacidade (LGPD/GDPR), além de gerarem custos recorrentes por token analisado.
+
+Modelos Open-Source Locais: Modelos de pesos abertos, como Llama 3 (Meta) e Qwen 2.5 (Alibaba), projetados para serem hospedados internamente pela própria organização. Para viabilizar a execução em hardware comercial restrito sem o uso de supercomputadores, esses modelos passam por processos de quantização (redução da precisão matemática de seus pesos para formatos como 4-bit ou 8-bit). Embora mitiguem completamente o risco de vazamento de dados corporativos (data privacy) e eliminem o custo de APIs comerciais, modelos menores (na faixa de 3 a 8 bilhões de parâmetros) exigem técnicas rigorosas de injeção de contexto para não perderem a precisão diagnóstica em cenários complexos.
+
+2.3.2 Limitações e Desafios: Alucinações e Latência
+
+Apesar do notável desempenho na automação do RCA, a aplicação de LLMs em sistemas críticos de infraestrutura enfrenta obstáculos técnicos severos. O principal deles é o fenômeno da Alucinação, onde o modelo gera saídas sintaticamente fluentes, porém factualmente incorretas.
+
+No domínio de Operações de TI, uma alucinação não é apenas um erro de cálculo; é um risco de integridade. Um modelo pode diagnosticar incorretamente a queda de um serviço inexistente ou, em cenários de auto-remediação (self-healing), sugerir e executar scripts bash destrutivos na produção. Para mitigar esse risco, a validação de LLMs em AIOps tem adotado práticas de Engenharia do Caos (Chaos Engineering). Szandała (2025) propõe que a eficácia diagnóstica de um LLM só deve ser validada submetendo-o a falhas intencionais injetadas em ambientes controlados, medindo sua aderência à verdade estrutural do sistema em vez de confiar cegamente na fluência textual gerada.
+
+Adicionalmente, a latência de inferência impõe restrições ao monitoramento contínuo. Mesmo com aceleração via GPU, a geração autointeligente de relatórios (token por token) possui um atraso inerente. Por isso, reitera-se a necessidade do paradigma híbrido: o LLM não deve ser utilizado como ferramenta de percepção em tempo real, mas invocado sob demanda apenas após o disparo de um alerta de ferramentas determinísticas tradicionais.
+
+2.3.3 A Janela de Contexto em Logs
+
+Uma limitação arquitetural intrínseca dos LLMs é a Janela de Contexto (Context Window), que define a quantidade máxima de tokens (fragmentos de palavras e código) que o modelo consegue processar simultaneamente em uma única requisição.
+
+Os logs de infraestrutura e aplicação, por natureza, são extremamente verbosos, repetitivos e carregados de ruído temporal (como timestamps milissegundos e hashes de sessão). Zhou et al. (2026) destacam que injetar despejos brutos de logs diretamente no prompt do LLM frequentemente extrapola o limite de contexto. Além disso, mesmo quando o limite não é ultrapassado, modelos tendem a sofrer do efeito "Lost in the Middle" (Perdido no Meio), onde informações cruciais sobre a causa raiz localizadas no centro de um log longo são ignoradas em prol de anomalias triviais no início ou no fim do documento.
+
+Para viabilizar o RCA automatizado, torna-se obrigatória a construção de um middleware que aplique a poda sintática de logs — filtrando linhas informacionais (INFO) e removendo timestamps redundantes — antes de encaminhar a carga útil (payload) estruturada para o modelo de linguagem. É essa curadoria da janela de contexto que garante diagnósticos precisos tanto em modelos comerciais quanto em arquiteturas open-source restritas.

@@ -147,3 +147,119 @@ A adoção de AIOps em ambientes corporativos enfrenta uma tensão recorrente en
 No outro extremo, iniciativas \textit{open source} como o Keep (keephq) avançam na direção da correlação automatizada de alertas, porém com foco em sumarização e integração com APIs de LLMs externos, sem suporte nativo a execução local de modelos e sem integração profunda com dados de \textit{logs} para RCA \cite{bisht2025generative}.
 
 O presente trabalho posiciona-se nessa lacuna: propõe uma arquitetura \textit{open source}, construída sobre o \textit{stack} Prometheus e LGTM já amplamente adotado em ambientes AWS, que integra LLMs para diagnóstico de causa raiz em linguagem natural. A flexibilidade de implantação, suportando tanto execução local via Ollama quanto consumo de APIs de inferência como Groq e Gemini, torna a solução acessível a diferentes perfis de infraestrutura e orçamento, sem dependência de plataformas proprietárias.
+
+\section{Modelos de Linguagem de Grande Escala (LLMs) em Operações}
+\label{sec:llms}
+
+A transição de algoritmos estatísticos para Modelos de Linguagem de Grande Escala (do inglês \textit{Large Language Models}, LLMs) representa o atual estado da arte no campo de AIOps. Diferentemente dos sistemas de aprendizado de máquina tradicionais, que exigiam rigorosa engenharia de características (\textit{feature engineering}) para converter \textit{logs} textuais em matrizes numéricas, os LLMs atuam como motores de raciocínio cognitivo, capazes de interpretar jargão técnico, arquiteturas de infraestrutura e mensagens de erro nativamente em linguagem natural \cite{ahmed2023recommending}.
+
+\subsection{Arquitetura \textit{Transformer}}
+
+A capacidade interpretativa dos LLMs advém de sua arquitetura base, o \textit{Transformer}, proposta por \citeonline{vaswani2017attention}. A Figura \ref{fig:transformer_arch} ilustra a arquitetura original, composta por um codificador (\textit{encoder}) e um decodificador (\textit{decoder}). O mecanismo central dessa arquitetura é a autoatenção (\textit{Self-Attention}), que permite ao modelo ponderar simultaneamente a relevância de diferentes \textit{tokens} em uma sequência de entrada, independentemente da distância entre eles. Essa propriedade é particularmente relevante para o domínio de operações de TI, pois permite que o modelo correlacione, por exemplo, uma métrica de uso de CPU no início de um alerta com uma exceção de banco de dados (\textit{TimeoutException}) dezenas de linhas abaixo em um arquivo de \textit{log}, extraindo a correlação causal entre eventos distantes.
+
+\begin{figure}[htb]
+    \centering
+    \caption{Arquitetura \textit{Transformer} original com codificador e decodificador.}
+    \includegraphics[width=0.45\textwidth]{pictures/transformer_architecture.png}
+    \fonte{\citeonline{vaswani2017attention}.}
+    \label{fig:transformer_arch}
+\end{figure}
+
+Os LLMs modernos utilizados em tarefas de AIOps adotam predominantemente a topologia baseada apenas em decodificadores (\textit{decoder-only}), otimizada para geração autorregressiva de texto \cite{survey_llm_aiops_2024}. Modelos como Llama 3 (Meta), Qwen 2.5 (Alibaba) e Gemma (Google) são representantes dessa família, com escalas que variam de 1 bilhão a centenas de bilhões de parâmetros.
+
+\subsection{Paradigmas de Inferência}
+\label{subsec:paradigmas_inferencia}
+
+A adoção de LLMs na resolução de incidentes divide-se atualmente em dois paradigmas principais de inferência, cada um com \textit{trade-offs} específicos para ambientes corporativos \cite{zhang2024survey}:
+
+\begin{itemize}
+    \item \textbf{Modelos comerciais (APIs de nuvem).} Soluções de código fechado (\textit{closed-source}), como GPT-4o (OpenAI) e Gemini (Google), que executam em infraestruturas de hiperescala e contam com centenas de bilhões de parâmetros. Oferecem capacidade de raciocínio avançada e baixa fricção de desenvolvimento. No entanto, exigem o envio de dados telemétricos, frequentemente contendo endereços IP, credenciais mascaradas e arquiteturas internas, para servidores de terceiros, esbarrando em políticas de conformidade e privacidade (LGPD/GDPR). Adicionalmente, geram custos recorrentes por \textit{token} processado.
+    \item \textbf{Modelos \textit{open source} locais.} Modelos de pesos abertos, como Llama 3 e Qwen 2.5, projetados para hospedagem interna pela própria organização. Para viabilizar a execução em \textit{hardware} comercial restrito, esses modelos passam por processos de quantização, ou seja, a redução da precisão matemática de seus pesos para formatos como 4-bit ou 8-bit. Embora mitiguem completamente o risco de vazamento de dados corporativos e eliminem custos de APIs comerciais, modelos menores (na faixa de 3 a 8 bilhões de parâmetros) exigem técnicas rigorosas de injeção de contexto para manter a precisão diagnóstica em cenários complexos \cite{li2025large}.
+\end{itemize}
+
+A Tabela \ref{tab:paradigmas_inferencia} compara os dois paradigmas em dimensões operacionais relevantes para o presente trabalho.
+
+\begin{table}[htb]
+    \centering
+    \caption{Comparativo entre paradigmas de inferência de LLMs.}
+    \label{tab:paradigmas_inferencia}
+    \begin{tabular}{p{3.5cm} p{4.5cm} p{4.5cm}}
+        \hline
+        \textbf{Dimensão} & \textbf{API Comercial} & \textbf{Modelo Local (Ollama)} \\
+        \hline
+        Privacidade dos dados & Dados enviados a terceiros & Dados permanecem internos \\
+        Custo operacional & Recorrente (por \textit{token}) & Fixo (\textit{hardware}) \\
+        Capacidade de raciocínio & Alta (centenas de bilhões de parâmetros) & Moderada (3--8B parâmetros quantizados) \\
+        Latência & Dependente da rede & Dependente da GPU/CPU local \\
+        Conformidade (LGPD) & Requer avaliação jurídica & Nativa \\
+        \hline
+    \end{tabular}
+    \fonte{Autoria própria (2026).}
+\end{table}
+
+No presente trabalho, a arquitetura do \textit{middleware} é deliberadamente agnóstica ao provedor de inferência, suportando ambos os paradigmas por meio de uma camada de abstração que permite alternar entre execução local via Ollama e consumo de APIs externas conforme os requisitos de cada cenário.
+
+\subsection{Limitações Intrínsecas dos LLMs}
+\label{subsec:limitacoes_llms}
+
+Apesar do desempenho na automação do RCA, a aplicação de LLMs em sistemas críticos de infraestrutura enfrenta obstáculos técnicos relevantes.
+
+O principal deles é o fenômeno da alucinação, onde o modelo gera saídas sintaticamente fluentes, porém factualmente incorretas. No domínio de operações de TI, uma alucinação não é apenas um erro textual, mas um risco operacional concreto: o modelo pode diagnosticar incorretamente a queda de um serviço inexistente ou sugerir ações de remediação inapropriadas. LLMs de fundação são pré-treinados em vastos repositórios de texto genérico, mas desconhecem a topologia interna de uma organização específica. Como o modelo não foi treinado com os códigos e a infraestrutura privada da empresa, ele não possui contexto natural para diagnosticar serviços com nomes internos. Esse isolamento induz ao risco da alucinação computacional \cite{ahmed2023recommending}. Para mitigar esse risco, \citeonline{szandala2025chaos} propõem que a eficácia diagnóstica de um LLM deve ser validada submetendo-o a falhas intencionais injetadas em ambientes controlados (\textit{Chaos Engineering}), medindo sua aderência à verdade estrutural do sistema.
+
+Uma segunda limitação é a janela de contexto (\textit{context window}), que define a quantidade máxima de \textit{tokens} que o modelo consegue processar em uma única requisição. Os \textit{logs} de infraestrutura são extremamente verbosos, repetitivos e carregados de ruído temporal. \citeonline{zhou_2026_root} destacam que injetar despejos brutos de \textit{logs} diretamente no \textit{prompt} frequentemente extrapola o limite de contexto. Além disso, mesmo quando o limite não é ultrapassado, modelos tendem a sofrer do efeito ``Perdido no Meio'' (\textit{Lost in the Middle}), onde informações cruciais localizadas no centro de um \textit{log} longo são ignoradas em prol de anomalias triviais no início ou no fim do documento.
+
+Essas limitações justificam a necessidade de técnicas específicas de injeção e curadoria de contexto para viabilizar o uso de LLMs na Análise de Causa Raiz, conforme detalhado na seção a seguir.
+
+\section{Técnicas de Integração de LLMs para Análise de Causa Raiz}
+\label{sec:tecnicas_rca}
+
+A aplicação efetiva de LLMs na Análise de Causa Raiz (RCA) exige que o modelo receba informações contextuais precisas sobre o incidente em análise, superando as limitações de alucinação e janela de contexto discutidas na seção anterior. Para isso, a literatura prescreve o uso de técnicas de injeção de contexto no momento da inferência, eliminando a necessidade de retreinamento (\textit{fine-tuning}) do modelo. As principais técnicas investigadas neste trabalho são descritas a seguir.
+
+\subsection{Aprendizado em Contexto (\textit{In-Context Learning}, ICL)}
+
+O Aprendizado em Contexto (ICL) é a capacidade do LLM de adaptar-se a uma tarefa baseando-se exclusivamente nas instruções e exemplos fornecidos no \textit{prompt} no momento da requisição, sem alteração dos pesos do modelo \cite{brown2020language}. Essa técnica elimina a dependência de ciclos de \textit{fine-tuning} e permite que o modelo interprete formatos de \textit{logs} proprietários dinamicamente.
+
+Dentro do paradigma de ICL, a variante \textit{Few-Shot Prompting} consiste em fornecer ao modelo um pequeno conjunto de exemplos de entrada e saída esperada antes da consulta real. No contexto de RCA, isso se traduz em fornecer ao LLM exemplos de alertas anteriores acompanhados de seus respectivos diagnósticos validados por engenheiros, permitindo que o modelo aprenda o padrão de resposta desejado sem treinamento adicional \cite{brown2020language}.
+
+\subsection{Raciocínio em Cadeia (\textit{Chain-of-Thought}, CoT)}
+
+A técnica de raciocínio em cadeia (\textit{Chain-of-Thought}, CoT), introduzida por \citeonline{wei2022chain}, consiste em estruturar o \textit{prompt} de forma a forçar o modelo a decompor o processo investigativo em etapas lógicas e explícitas, em vez de gerar uma resposta direta. Conforme demonstram \citeonline{wang_2025_integrating}, o uso de CoT no cruzamento de dados de telemetria reduz o risco de alucinações nos diagnósticos, pois obriga o modelo a justificar cada etapa do raciocínio antes de apresentar a conclusão.
+
+No contexto do presente trabalho, o CoT é aplicado para guiar o LLM através de uma sequência investigativa estruturada: (1) identificar a métrica anômala no alerta, (2) correlacionar com os \textit{logs} do intervalo temporal correspondente, (3) isolar a mensagem de erro primária e (4) formular o diagnóstico de causa raiz com base nas evidências coletadas.
+
+\subsection{Geração com Recuperação Aumentada (\textit{Retrieval-Augmented Generation}, RAG)}
+
+A Geração com Recuperação Aumentada (RAG), proposta por \citeonline{lewis2020rag}, é uma arquitetura que combina um componente de recuperação de informações com um modelo generativo. Em vez de depender exclusivamente do conhecimento internalizado durante o pré-treinamento, o sistema consulta uma base de dados externa para recuperar documentos relevantes e os injeta no contexto do \textit{prompt} antes da geração da resposta. A Figura \ref{fig:rag_pipeline} ilustra o fluxo básico dessa arquitetura.
+
+\begin{figure}[htb]
+    \centering
+    \caption{\textit{Pipeline} básico de Geração com Recuperação Aumentada (RAG).}
+    \includegraphics[width=0.85\textwidth]{pictures/rag_pipeline.png}
+    \fonte{Adaptado de Lewis et al. (2020).}
+    \label{fig:rag_pipeline}
+\end{figure}
+
+\citeonline{goel2025accelerating} demonstram a aplicação de RAG especificamente para RCA em ambientes de nuvem, evidenciando que a injeção de documentação operacional e registros históricos de incidentes no contexto do LLM melhora significativamente a precisão dos diagnósticos gerados. No presente trabalho, o \textit{middleware} implementa uma variante operacional de RAG: ao receber um alerta do Alertmanager, o sistema consulta automaticamente a API do Prometheus (para métricas históricas) e a API do Loki (para \textit{logs} da janela temporal do incidente), estrutura essas informações e as injeta no \textit{prompt} do modelo, restringindo a resposta aos fatos observáveis e mitigando alucinações.
+
+\subsection{Agentes Autônomos com Ferramentas (\textit{Tool-Augmented Agents})}
+\label{subsec:agentes}
+
+Uma fronteira recente na aplicação de LLMs em AIOps é o paradigma de agentes autônomos com acesso a ferramentas externas (\textit{Tool-Augmented Agents}). Nessa abordagem, o LLM não apenas recebe dados passivamente, mas é instrumentado para invocar APIs, executar consultas e tomar decisões iterativas de forma autônoma \cite{wang2024rcagent}.
+
+\citeonline{wang2024rcagent} propõem o RCAgent, um sistema onde o LLM atua como um agente de investigação que, ao receber um alerta, decide autonomamente quais ferramentas invocar (consultas PromQL, buscas em \textit{logs}, verificação de status de serviços) para coletar as evidências necessárias ao diagnóstico. A Figura \ref{fig:rcagent_overview} ilustra a arquitetura do RCAgent em comparação com o paradigma ReAct convencional. Essa abordagem supera as limitações da injeção estática de contexto, pois permite investigações dinâmicas e iterativas.
+
+\begin{figure}[htb]
+    \centering
+    \caption{Arquitetura do RCAgent comparada ao paradigma ReAct convencional.}
+    \includegraphics[width=0.95\textwidth]{pictures/rcagent_overview.png}
+    \fonte{\citeonline{wang2024rcagent}.}
+    \label{fig:rcagent_overview}
+\end{figure}
+
+No escopo do presente trabalho, o paradigma de agentes autônomos é explorado como direção complementar à injeção estática de contexto, permitindo avaliar os \textit{trade-offs} entre a abordagem controlada (RAG) e a abordagem exploratória (agentes com ferramentas) na qualidade dos diagnósticos gerados.
+
+\subsection{Curadoria da Janela de Contexto}
+\label{subsec:curadoria_contexto}
+
+Independentemente da técnica de injeção adotada, a curadoria dos dados injetados no \textit{prompt} é determinante para a qualidade do diagnóstico. Para viabilizar o RCA automatizado, torna-se necessária a construção de um \textit{middleware} que aplique a poda e filtragem de \textit{logs}, removendo linhas informacionais e \textit{timestamps} redundantes, antes de encaminhar a carga útil estruturada para o modelo. É essa curadoria da janela de contexto que viabiliza diagnósticos precisos tanto em modelos comerciais quanto em arquiteturas \textit{open source} com janelas de contexto restritas.
+
