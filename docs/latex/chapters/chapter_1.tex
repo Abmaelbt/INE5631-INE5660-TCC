@@ -1,7 +1,7 @@
 \chapter{Fundamentação Teórica}
 \label{chap:fundamentacao}
 
-Este capítulo apresenta os conceitos estruturais necessários para a compreensão do sistema proposto. Inicialmente, discute-se a evolução do monitoramento clássico para a observabilidade em ambientes distribuídos, detalhando os tipos de dados de telemetria gerados. Em seguida, aborda-se as limitações dos modelos tradicionais de alerta e o paradoxo da explosão de dados, justificando a necessidade arquitetural de abordagens inteligentes na resolução de incidentes.
+Este capítulo apresenta os conceitos estruturais necessários para a compreensão do sistema proposto. Inicialmente, discute-se a evolução da observabilidade em ambientes distribuídos e o paradoxo da explosão de dados gerada pelas ferramentas tradicionais. Em seguida, introduz-se o conceito de Inteligência Artificial para Operações de TI (AIOps), avançando para o estudo arquitetural dos Modelos de Linguagem de Grande Escala (LLMs) e das técnicas de injeção de contexto fundamentais para a automação da Análise de Causa Raiz (RCA).
 
 \section{Observabilidade em Arquiteturas Nativas em Nuvem}
 \label{sec:observabilidade}
@@ -23,12 +23,12 @@ Para que um sistema seja considerado observável, a literatura consolidada o est
 \subsection{Métricas (\textit{Metrics})}
 As métricas são medições quantitativas coletadas continuamente de componentes da infraestrutura, como uso de CPU, utilização de memória, I/O de disco e taxa de requisições por segundo. Por sua natureza numérica e estruturada, constituem séries temporais que permitem a identificação de tendências, padrões sazonais e desvios, sendo extremamente eficientes em termos de armazenamento computacional.
 
-No contexto de plataformas corporativas, as métricas representam a etapa primária de detecção de anomalias (\textit{Failure Perception}) e a principal fonte para o disparo de alertas. O Prometheus, ferramenta \textit{open source} padrão em ecossistemas de nuvem, é utilizado para a raspagem periódica de dados. Contudo, o modelo clássico adotado, baseado em violações de limiares estáticos, frequentemente falha em isolar a explicação semântica do comportamento.
+No contexto de plataformas corporativas, as métricas representam a etapa primária de detecção de anomalias (\textit{Failure Perception}) e a principal fonte para o disparo de alertas. O Prometheus, ferramenta \textit{open source} padrão em ecossistemas de nuvem, é utilizado para a raspagem periódica de dados. A manipulação dessas métricas exige o domínio de linguagens de consulta específicas, como o PromQL (\textit{Prometheus Query Language}). Diferente de consultas textuais convencionais, o PromQL é projetado para computações vetoriais sobre séries temporais multidimensionais, o que o torna matematicamente expressivo para detectar anomalias, mas árido e complexo para a identificação da causa subjacente da falha. O modelo clássico, baseado em violações matemáticas de limiares estáticos, frequentemente falha em isolar a explicação semântica do comportamento anômalo.
 
 \subsection{Logs}
 Os \textit{logs} consistem em registros textuais discretos, imutáveis e detalhados sobre os eventos que ocorrem dentro da aplicação ou no sistema operacional, abrangendo exceções, rastreamentos de pilha (\textit{stack traces}) e tempos limite de banco de dados. Diferentemente das métricas, sua natureza é não estruturada, o que os torna a fonte mais rica de contexto real sobre a causa de uma falha.
 
-Conforme apontam \citeonline{notaro2021survey}, a correlação dos \textit{logs} com as métricas é vital, pois uma única exceção em arquiteturas de microsserviços pode desencadear uma reação em cascata. Ferramentas como o Loki (da pilha LGTM) são responsáveis por agregar esses textos. Na prática arquitetural do sistema proposto, quando o Prometheus detecta um pico matemático anômalo, o \textit{middleware} realiza o cruzamento consultando os \textit{logs} do Loki numa janela temporal exata (ex: $\pm 15$ minutos) para extrair o motivo primário do incidente.
+Conforme apontam \citeonline{notaro2021survey}, a correlação dos \textit{logs} com as métricas é vital, pois uma única exceção em arquiteturas de microsserviços pode desencadear uma reação em cascata. Ferramentas como o Loki (da pilha LGTM) são responsáveis por agregar esses textos, os quais são recuperados por meio da linguagem LogQL. Embora otimizado para lidar com altos volumes de dados utilizando filtros de correspondência de padrões (como expressões regulares), o LogQL retorna extensas partições de texto bruto que demandam forte escrutínio humano. Na prática arquitetural do sistema proposto, quando o Prometheus detecta um pico matemático anômalo via PromQL, o \textit{middleware} realiza o cruzamento consultando automaticamente os \textit{logs} do Loki numa janela temporal exata (ex: $\pm 15$ minutos). É justamente pela complexidade bruta das saídas do PromQL e LogQL que a intervenção de um LLM se faz necessária: ele atua como o mecanismo semântico capaz de traduzir a intersecção de anomalias vetoriais e milhares de linhas de texto em um diagnóstico em linguagem natural compreensível pelo operador.
 
 \subsection{Rastros (\textit{Traces})}
 Em ambientes distribuídos, uma requisição transita por diversos serviços até ser totalmente processada. Os rastros mapeiam o ciclo de vida completo dessa jornada. Compostos por segmentos (\textit{spans}) que registram o tempo gasto em cada nó da rede, os rastros oferecem a visibilidade necessária para isolar em qual microsserviço exato ocorreu a latência estrutural \cite{wang_2025_integrating}.
@@ -39,6 +39,7 @@ A Tabela \ref{tab:sintese_pilares} sintetiza as características fundamentais de
 
 \begin{table}[htb]
     \centering
+    \small
     \caption{Síntese dos três pilares da observabilidade.}
     \label{tab:sintese_pilares}
     \begin{tabular}{p{1.4cm} p{2.5cm} p{3cm} p{3.2cm} p{3.8cm}}
@@ -126,7 +127,7 @@ A Tabela \ref{tab:evolucao_aiops} sintetiza a evolução das abordagens de AIOps
     \centering
     \caption{Evolução das abordagens de AIOps.}
     \label{tab:evolucao_aiops}
-    \begin{tabular}{p{3.8cm} p{3.2cm} p{3.2cm} p{3.2cm}}
+    \begin{tabular}{>{\raggedright\arraybackslash}p{3.8cm} >{\raggedright\arraybackslash}p{3.2cm} >{\raggedright\arraybackslash}p{3.2cm} >{\raggedright\arraybackslash}p{3.2cm}}
         \hline
         \textbf{Característica} & \textbf{AIOps Tradicional (ML/DL)} & \textbf{AIOps com LLMs} & \textbf{Este Trabalho} \\
         \hline
@@ -144,7 +145,7 @@ A Tabela \ref{tab:evolucao_aiops} sintetiza a evolução das abordagens de AIOps
 
 A adoção de AIOps em ambientes corporativos enfrenta uma tensão recorrente entre capacidade técnica e viabilidade econômica. Soluções comerciais como Datadog AI Ops, Dynatrace Davis e AWS DevOps Guru oferecem funcionalidades avançadas de correlação e diagnóstico, porém com custos de licenciamento que as tornam inacessíveis para organizações de médio porte \cite{sharma2026top}. Adicionalmente, essas plataformas exigem o envio de dados operacionais para infraestruturas externas, o que pode representar impedimentos de conformidade e segurança da informação.
 
-No outro extremo, iniciativas \textit{open source} como o Keep (keephq) avançam na direção da correlação automatizada de alertas, porém com foco em sumarização e integração com APIs de LLMs externos, sem suporte nativo a execução local de modelos e sem integração profunda com dados de \textit{logs} para RCA \cite{bisht2025generative}.
+No outro extremo, iniciativas \textit{open source} como o Keep\footnote{\url{https://github.com/keephq/keep}} avançam na direção da correlação automatizada de alertas, porém com foco em roteamento e sumarização usando APIs de LLMs externos, sem suporte nativo a execução local de modelos. Como aponta a revisão de \citeonline{bisht2025generative}, muitas dessas soluções emergentes carecem de uma integração profunda com bancos de \textit{logs} locais para viabilizar um RCA estruturado.
 
 O presente trabalho posiciona-se nessa lacuna: propõe uma arquitetura \textit{open source}, construída sobre o \textit{stack} Prometheus e LGTM já amplamente adotado em ambientes AWS, que integra LLMs para diagnóstico de causa raiz em linguagem natural. A flexibilidade de implantação, suportando tanto execução local via Ollama quanto consumo de APIs de inferência como Groq e Gemini, torna a solução acessível a diferentes perfis de infraestrutura e orçamento, sem dependência de plataformas proprietárias.
 
@@ -174,7 +175,7 @@ A adoção de LLMs na resolução de incidentes divide-se atualmente em dois par
 
 \begin{itemize}
     \item \textbf{Modelos comerciais (APIs de nuvem).} Soluções de código fechado (\textit{closed-source}), como GPT-4o (OpenAI) e Gemini (Google), que executam em infraestruturas de hiperescala e contam com centenas de bilhões de parâmetros. Oferecem capacidade de raciocínio avançada e baixa fricção de desenvolvimento. No entanto, exigem o envio de dados telemétricos, frequentemente contendo endereços IP, credenciais mascaradas e arquiteturas internas, para servidores de terceiros, esbarrando em políticas de conformidade e privacidade (LGPD/GDPR). Adicionalmente, geram custos recorrentes por \textit{token} processado.
-    \item \textbf{Modelos \textit{open source} locais.} Modelos de pesos abertos, como Llama 3 e Qwen 2.5, projetados para hospedagem interna pela própria organização. Para viabilizar a execução em \textit{hardware} comercial restrito, esses modelos passam por processos de quantização, ou seja, a redução da precisão matemática de seus pesos para formatos como 4-bit ou 8-bit. Embora mitiguem completamente o risco de vazamento de dados corporativos e eliminem custos de APIs comerciais, modelos menores (na faixa de 3 a 8 bilhões de parâmetros) exigem técnicas rigorosas de injeção de contexto para manter a precisão diagnóstica em cenários complexos \cite{li2025large}.
+    \item \textbf{Modelos \textit{open source} locais.} Modelos de pesos abertos, como Llama 3 e Qwen 2.5, projetados para hospedagem interna pela própria organização. Para viabilizar a execução em \textit{hardware} comercial restrito, esses modelos passam por processos de quantização, ou seja, a redução da precisão matemática de seus pesos para formatos como 4-bit ou 8-bit. Embora mitiguem completamente o risco de vazamento de dados corporativos e eliminem custos de APIs comerciais, modelos limitados pela capacidade da GPU local (variando comumente de 8 a 72 bilhões de parâmetros) exigem técnicas rigorosas de injeção de contexto para manter a precisão diagnóstica em cenários complexos \cite{li2025large}.
 \end{itemize}
 
 A Tabela \ref{tab:paradigmas_inferencia} compara os dois paradigmas em dimensões operacionais relevantes para o presente trabalho.
@@ -189,7 +190,7 @@ A Tabela \ref{tab:paradigmas_inferencia} compara os dois paradigmas em dimensõe
         \hline
         Privacidade dos dados & Dados enviados a terceiros & Dados permanecem internos \\
         Custo operacional & Recorrente (por \textit{token}) & Fixo (\textit{hardware}) \\
-        Capacidade de raciocínio & Alta (centenas de bilhões de parâmetros) & Moderada (3--8B parâmetros quantizados) \\
+        Capacidade de raciocínio & Altíssima (centenas de bilhões de parâmetros) & Variável (ex: 0.8B a 122B parâmetros quantizados) \\
         Latência & Dependente da rede & Dependente da GPU/CPU local \\
         Conformidade (LGPD) & Requer avaliação jurídica & Nativa \\
         \hline
@@ -213,7 +214,7 @@ Essas limitações justificam a necessidade de técnicas específicas de injeç�
 \section{Técnicas de Integração de LLMs para Análise de Causa Raiz}
 \label{sec:tecnicas_rca}
 
-A aplicação efetiva de LLMs na Análise de Causa Raiz (RCA) exige que o modelo receba informações contextuais precisas sobre o incidente em análise, superando as limitações de alucinação e janela de contexto discutidas na seção anterior. Para isso, a literatura prescreve o uso de técnicas de injeção de contexto no momento da inferência, eliminando a necessidade de retreinamento (\textit{fine-tuning}) do modelo. As principais técnicas investigadas neste trabalho são descritas a seguir.
+A aplicação efetiva de LLMs na Análise de Causa Raiz (RCA) exige que o modelo receba informações contextuais precisas sobre o incidente em análise, superando as limitações de alucinação e janela de contexto discutidas na seção anterior. Para isso, a literatura prescreve o uso de técnicas de injeção de contexto no momento da inferência, eliminando a necessidade de retreinamento (\textit{fine-tuning}) do modelo. A seguir são descritas as principais técnicas aplicáveis a esse domínio.
 
 \subsection{Aprendizado em Contexto (\textit{In-Context Learning}, ICL)}
 
@@ -241,22 +242,6 @@ A Geração com Recuperação Aumentada (RAG), proposta por \citeonline{lewis202
 
 \citeonline{goel2025accelerating} demonstram a aplicação de RAG especificamente para RCA em ambientes de nuvem, evidenciando que a injeção de documentação operacional e registros históricos de incidentes no contexto do LLM melhora significativamente a precisão dos diagnósticos gerados. No presente trabalho, o \textit{middleware} implementa uma variante operacional de RAG: ao receber um alerta do Alertmanager, o sistema consulta automaticamente a API do Prometheus (para métricas históricas) e a API do Loki (para \textit{logs} da janela temporal do incidente), estrutura essas informações e as injeta no \textit{prompt} do modelo, restringindo a resposta aos fatos observáveis e mitigando alucinações.
 
-\subsection{Agentes Autônomos com Ferramentas (\textit{Tool-Augmented Agents})}
-\label{subsec:agentes}
-
-Uma fronteira recente na aplicação de LLMs em AIOps é o paradigma de agentes autônomos com acesso a ferramentas externas (\textit{Tool-Augmented Agents}). Nessa abordagem, o LLM não apenas recebe dados passivamente, mas é instrumentado para invocar APIs, executar consultas e tomar decisões iterativas de forma autônoma \cite{wang2024rcagent}.
-
-\citeonline{wang2024rcagent} propõem o RCAgent, um sistema onde o LLM atua como um agente de investigação que, ao receber um alerta, decide autonomamente quais ferramentas invocar (consultas PromQL, buscas em \textit{logs}, verificação de status de serviços) para coletar as evidências necessárias ao diagnóstico. A Figura \ref{fig:rcagent_overview} ilustra a arquitetura do RCAgent em comparação com o paradigma ReAct convencional. Essa abordagem supera as limitações da injeção estática de contexto, pois permite investigações dinâmicas e iterativas.
-
-\begin{figure}[htb]
-    \centering
-    \caption{Arquitetura do RCAgent comparada ao paradigma ReAct convencional.}
-    \includegraphics[width=0.95\textwidth]{pictures/rcagent_overview.png}
-    \fonte{\citeonline{wang2024rcagent}.}
-    \label{fig:rcagent_overview}
-\end{figure}
-
-No escopo do presente trabalho, o paradigma de agentes autônomos é explorado como direção complementar à injeção estática de contexto, permitindo avaliar os \textit{trade-offs} entre a abordagem controlada (RAG) e a abordagem exploratória (agentes com ferramentas) na qualidade dos diagnósticos gerados.
 
 \subsection{Curadoria da Janela de Contexto}
 \label{subsec:curadoria_contexto}

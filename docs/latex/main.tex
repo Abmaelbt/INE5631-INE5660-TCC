@@ -143,14 +143,20 @@ section=TITLE, % Título de seções em caixa alta
 % https://tex.stackexchange.com/questions/340661/argument-of-languageactivearg-has-an-extra-i-use-includegraphics-and-r
 \useshorthands{~}\defineshorthand{~=}{\hyp{}}
 
-\palavraschaveufsc{palavraschaveingles}   {Keyword 1}
-\palavraschaveufsc{palavraschaveportugues}{Palavra~=Chave 1}
+\palavraschaveufsc{palavraschaveingles}   {AIOps}
+\palavraschaveufsc{palavraschaveportugues}{AIOps}
 
-\palavraschaveufsc{palavraschaveingles}   {Keyword 2}
-\palavraschaveufsc{palavraschaveportugues}{Palavra~=Chave 2}
+\palavraschaveufsc{palavraschaveingles}   {Large Language Models}
+\palavraschaveufsc{palavraschaveportugues}{Modelos de Linguagem de Grande Escala}
 
-\palavraschaveufsc{palavraschaveingles}   {Keyword 3}
-\palavraschaveufsc{palavraschaveportugues}{Palavra~=Chave 3}
+\palavraschaveufsc{palavraschaveingles}   {Root Cause Analysis}
+\palavraschaveufsc{palavraschaveportugues}{Análise de Causa Raiz}
+
+\palavraschaveufsc{palavraschaveingles}   {Observability}
+\palavraschaveufsc{palavraschaveportugues}{Observabilidade}
+
+\palavraschaveufsc{palavraschaveingles}   {Retrieval-Augmented Generation}
+\palavraschaveufsc{palavraschaveportugues}{Geração com Recuperação Aumentada}
 
 
 \hypersetup
@@ -240,9 +246,9 @@ section=TITLE, % Título de seções em caixa alta
 \setlength\midchapskip{20pt}
 \setlength\afterchapskip{20pt}
 
-% PARTE
-\ifforcedinclude\else\part{\lang{Research}{Pesquisa}}\fi
-\label{primeira_parte}
+% PARTE (removida para não exibir no sumário)
+% \ifforcedinclude\else\part{\lang{Research}{Pesquisa}}\fi
+% \label{primeira_parte}
 
 % Introdução (exemplo de capítulo sem numeração, mas presente no Sumário)
 \include{chapters/intro}
@@ -256,16 +262,16 @@ section=TITLE, % Título de seções em caixa alta
 % Primeiro capitulo de Resultados
 \include{chapters/chapter_3}
 
-% PARTE
-\ifforcedinclude\else\part{\lang{Implementation}{Implementação}}\fi
-\label{segunda_parte}
+% PARTE (removida)
+% \ifforcedinclude\else\part{\lang{Implementation}{Implementação}}\fi
+% \label{segunda_parte}
 
 % Segundo capitulo de Resultados
 \include{chapters/chapter_4}
 
 % Finaliza a parte no bookmark do PDF para que se inicie o bookmark na raiz
 % e adiciona espaço de parte no Sumário
-\phantompart
+% \phantompart
 
 % Conclusão (outro exemplo de capítulo sem numeração e presente no sumário)
 \include{chapters/conclusion}

@@ -1148,7 +1148,7 @@
 
 % cannot use \caption under minipage
 % https://tex.stackexchange.com/questions/57433/cannot-use-caption-under-minipage
-\usepackage{capt-of}
+% \usepackage{capt-of}
 
 % Custom list throw LaTeX Error: Command \mycustomfiction already defined?
 % https://tex.stackexchange.com/questions/388489/custom-list-throw-latex-error-command-mycustomfiction-already-defined
