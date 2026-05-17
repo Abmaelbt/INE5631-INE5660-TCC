@@ -294,3 +294,92 @@ No presente trabalho, a avaliação do protótipo adota métricas compatíveis c
 | [Notaro et al., 2021] | NOTARO, Paolo; CARDOSO, Jorge; GERNDT, Michael. **A Survey of AIOps Methods for Failure Management**. ACM Transactions on Intelligent Systems and Technology (TIST), v. 12, n. 6, p. 1–45, 2021. DOI: 10.1145/3483424. |
 | [Zhang et al., 2025] | ZHANG, Lingzhe et al. **A Survey of AIOps in the Era of Large Language Models**. Journal of the ACM, v. 37, n. 4, art. 111, ago. 2025. arXiv:2507.12472v1. |
 | [Wang et al., 2025] | WANG, Chen et al. **Integrating Large Language Models with Cloud-Native Observability for Automated Root Cause Analysis and Remediation**. In: AISNS 2025, Xiangtan, China. ACM, 2025. DOI: 10.1145/3797161.3797213. |
+
+# 3. Trabalhos Relacionados
+
+Este capítulo apresenta um panorama das soluções e pesquisas existentes que se relacionam com o presente trabalho, organizadas em duas categorias: ferramentas correlatas — plataformas e sistemas comerciais ou *open source* voltados à automação de operações de TI — e trabalhos acadêmicos correlatos — artigos e dissertações que investigam a aplicação de LLMs e técnicas de inteligência artificial ao diagnóstico de incidentes em infraestruturas de nuvem.
+
+O objetivo desta análise não é apenas mapear o que existe, mas identificar as lacunas que motivam e diferenciam a proposta deste trabalho. Ao final do capítulo, uma tabela comparativa sintetiza as principais dimensões de análise, posicionando o sistema proposto em relação ao estado da arte.
+
+---
+
+## 3.1 Ferramentas Correlatas
+
+As ferramentas de AIOps disponíveis no mercado e na comunidade *open source* podem ser organizadas em dois grupos: soluções comerciais, que oferecem funcionalidades avançadas mas com custos de licenciamento e dependência de fornecedor; e soluções *open source*, que oferecem maior flexibilidade mas com menor maturidade funcional no domínio de RCA com LLMs.
+
+---
+
+### 3.1.1 Datadog AI Ops
+
+O Datadog é uma das plataformas de observabilidade e AIOps mais amplamente adotadas no mercado. Em sua camada de inteligência artificial — comercializada como *Bits AI* — a plataforma oferece funcionalidades de correlação automática de alertas, detecção de anomalias em séries temporais e assistente conversacional para diagnóstico de incidentes [Datadog, 2024]. O assistente é capaz de responder perguntas em linguagem natural sobre o estado da infraestrutura, correlacionar métricas, logs e traces automaticamente e sugerir causas prováveis para incidentes detectados.
+
+Do ponto de vista técnico, o Datadog integra coleta de telemetria, armazenamento, visualização e inteligência artificial em uma plataforma unificada, eliminando a necessidade de configuração e manutenção de múltiplas ferramentas. A integração nativa com ambientes AWS — incluindo suporte a EC2, ECS, Lambda e serviços gerenciados — facilita a adoção em infraestruturas em nuvem.
+
+Entretanto, o Datadog apresenta duas limitações centrais que restringem sua adoção em contextos como o deste trabalho. Primeiro, o custo de licenciamento é expressivo — a plataforma adota modelo de precificação baseado em volume de hosts, métricas e logs ingeridos, tornando-se economicamente inviável para empresas de médio porte sem orçamento dedicado de observabilidade. Segundo, toda a telemetria operacional é enviada para a infraestrutura do Datadog, o que pode representar impedimentos de conformidade, privacidade e segurança da informação para organizações com restrições regulatórias. Finalmente, o modelo LLM subjacente ao *Bits AI* é proprietário e não auditável, impedindo qualquer customização ou adaptação ao domínio específico da infraestrutura monitorada.
+
+---
+
+### 3.1.2 Dynatrace Davis
+
+O Dynatrace é outra plataforma líder no mercado de observabilidade *full-stack*, reconhecida pelo seu mecanismo de inteligência artificial denominado Davis. O Davis é descrito pela Dynatrace como um *AI causality engine* — um motor de causalidade baseado em aprendizado de máquina capaz de correlacionar automaticamente dados de métricas, logs, traces e eventos de topologia para identificar a causa raiz de problemas, reduzindo o ruído de alertas e priorizando incidentes com base em impacto ao negócio [Dynatrace, 2024].
+
+Uma característica distintiva do Davis é o uso de grafos de dependência de serviços construídos automaticamente a partir da instrumentação da plataforma — o Dynatrace OneAgent mapeia continuamente as relações entre componentes da infraestrutura, enriquecendo o contexto disponível para o diagnóstico. Mais recentemente, a plataforma incorporou capacidades de LLM por meio do *Dynatrace Davis AI*, que combina o motor causal existente com geração de linguagem natural para explicar diagnósticos em linguagem acessível a operadores.
+
+Assim como o Datadog, o Dynatrace apresenta as mesmas restrições estruturais de custo e dependência de fornecedor. O modelo de licenciamento baseado em Dynatrace Units (DPUs) é opaco e frequentemente oneroso para ambientes de médio porte. Adicionalmente, a plataforma é fortemente acoplada ao seu próprio agente de instrumentação — o OneAgent — o que dificulta a integração com stacks de observabilidade *open source* como Prometheus e LGTM já estabelecidos na infraestrutura da organização.
+
+---
+
+### 3.1.3 AWS DevOps Guru
+
+O AWS DevOps Guru é um serviço gerenciado da Amazon Web Services voltado para a detecção de anomalias operacionais em aplicações AWS [Amazon Web Services, 2024]. O serviço utiliza modelos de aprendizado de máquina treinados com dados operacionais de milhares de clientes AWS para identificar comportamentos anômalos em métricas do CloudWatch, logs e eventos de configuração, gerando *insights* acionáveis com recomendações de remediação.
+
+A integração nativa com o ecossistema AWS é o principal diferencial do DevOps Guru — o serviço não exige instrumentação adicional para monitorar recursos como EC2, RDS, Lambda, ECS e API Gateway, aproveitando os dados já coletados pelo CloudWatch. O serviço também integra-se com o AWS Systems Manager OpsCenter para centralizar os *insights* gerados junto com outros eventos operacionais.
+
+Entretanto, o DevOps Guru apresenta limitações relevantes para o presente trabalho. O serviço opera exclusivamente sobre dados do ecossistema AWS — métricas do CloudWatch e logs do CloudWatch Logs — sem suporte a dados coletados por ferramentas *open source* como Prometheus e Loki. Isso o torna incompatível com stacks de observabilidade híbridos ou baseados em padrões abertos. Adicionalmente, o serviço não oferece diagnósticos em linguagem natural no nível de detalhe contextualizado que LLMs modernos são capazes de gerar — suas recomendações são baseadas em padrões pré-aprendidos e não se adaptam ao contexto específico do incidente em tempo real. Por fim, assim como as demais soluções comerciais, todo o processamento ocorre na infraestrutura da AWS, sem opção de execução local.
+
+---
+
+### 3.1.4 Keep (keephq)
+
+O Keep é uma plataforma *open source* de AIOps que se posiciona como alternativa às soluções comerciais para correlação e gerenciamento de alertas [Keep, 2025]. A plataforma oferece integração com múltiplas ferramentas de monitoramento — incluindo Prometheus, Grafana, Datadog, PagerDuty e outras — por meio de *providers* bidirecionais que permitem tanto a leitura de alertas quanto a execução de ações de resposta.
+
+O Keep disponibiliza funcionalidades de correlação automática de alertas em incidentes de alto nível, supressão de ruído por agrupamento semântico e automação de *workflows* definidos em formato YAML — similar ao GitHub Actions — para orquestração de respostas a incidentes. Mais recentemente, a plataforma incorporou integração com LLMs via APIs externas para sumarização de incidentes e geração de diagnósticos preliminares em linguagem natural.
+
+Dentre as ferramentas analisadas, o Keep é a que mais se aproxima da proposta deste trabalho em termos de filosofia — *open source*, integração nativa com Prometheus e orientada a automação de operações. Entretanto, existem diferenças técnicas relevantes que a distanciam do sistema proposto. Primeiro, o foco do Keep é em correlação e gerenciamento de alertas — seu módulo de RCA é incipiente e baseado em sumarização, não em análise contextual profunda com injeção de dados de telemetria estruturados. Segundo, a integração com LLMs depende de APIs externas pagas (OpenAI, Anthropic), sem suporte nativo a modelos executados localmente. Terceiro, em maio de 2025 o Keep foi adquirido pela Elastic [Keep, 2025], o que levanta incertezas sobre a continuidade do projeto como solução *open source* independente.
+
+---
+
+### 3.1.5 Síntese comparativa das ferramentas
+
+A Tabela 3.1 sintetiza as principais características das ferramentas analisadas em relação às dimensões relevantes para o presente trabalho.
+
+**Tabela 3.1 — Comparativo entre ferramentas correlatas de AIOps**
+
+| Critério | Datadog AI Ops | Dynatrace Davis | AWS DevOps Guru | Keep (keephq) | **Este trabalho** |
+|---|---|---|---|---|---|
+| Modelo de licença | Proprietário | Proprietário | Proprietário | Open source* | Open source |
+| Custo de licenciamento | Alto | Alto | Médio | Gratuito* | Gratuito |
+| Integração Prometheus/LGTM | Parcial | ❌ | ❌ | ✅ | ✅ |
+| Integração com AWS EC2 | ✅ | ✅ | ✅ nativa | ✅ | ✅ |
+| RCA com LLM | ✅ proprietário | ✅ proprietário | ❌ | ⚠️ incipiente | ✅ open source |
+| Diagnóstico em linguagem natural | ✅ | ✅ | ⚠️ limitado | ⚠️ sumarização | ✅ |
+| Execução local do LLM | ❌ | ❌ | ❌ | ❌ | ✅ via Ollama |
+| Dados enviados externamente | ✅ obrigatório | ✅ obrigatório | ✅ obrigatório | ✅ obrigatório | ⚠️ opcional |
+| Customização do modelo LLM | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Injeção de contexto (RAG/Few-shot) | ❌ | ❌ | ❌ | ❌ | ✅ |
+
+*\*Status incerto após aquisição pela Elastic em maio de 2025.*
+
+A análise comparativa evidencia que nenhuma das ferramentas existentes combina os quatro atributos centrais do sistema proposto: integração nativa com o *stack* Prometheus e LGTM, diagnóstico de causa raiz por LLM com injeção de contexto operacional, suporte a execução local do modelo e arquitetura completamente *open source*. Essa lacuna justifica e posiciona a contribuição do presente trabalho em relação ao estado da arte das ferramentas disponíveis.
+
+---
+
+## Referências desta seção
+
+| Chave | Referência |
+|---|---|
+| [Datadog, 2024] | DATADOG. **Bits AI: Datadog AI Assistant**. Documentação oficial. Disponível em: https://docs.datadoghq.com/bits_ai/. Acesso em: 2025. |
+| [Dynatrace, 2024] | DYNATRACE. **Davis AI: Dynatrace AI engine**. Documentação oficial. Disponível em: https://www.dynatrace.com/platform/artificial-intelligence/. Acesso em: 2025. |
+| [Amazon Web Services, 2024] | AMAZON WEB SERVICES. **Amazon DevOps Guru**. Documentação oficial. Disponível em: https://aws.amazon.com/devops-guru/. Acesso em: 2025. |
+| [Keep, 2025] | KEEP. **Keep: The open-source AIOps platform**. Repositório GitHub. Disponível em: https://github.com/keephq/keep. Acesso em: 2025. |
+| [Zhang et al., 2025] | ZHANG, Lingzhe et al. **A Survey of AIOps in the Era of Large Language Models**. Journal of the ACM, v. 37, n. 4, art. 111, ago. 2025. arXiv:2507.12472v1. |

@@ -1,27 +1,74 @@
+\chapter{Trabalhos Relacionados}
+\label{chap:trabalhos_relacionados}
 
-% The \phantomsection command is needed to create a link to a place in the document that is not a
-% figure, equation, table, section, subsection, chapter, etc.
-% https://tex.stackexchange.com/questions/44088/when-do-i-need-to-invoke-phantomsection
-\phantomsection
+Este capítulo tem como objetivo situar o presente trabalho no contexto tecnológico e acadêmico atual. Para justificar a arquitetura proposta, é fundamental analisar como o problema da Análise de Causa Raiz (RCA) e da fadiga de alertas está sendo abordado por diferentes atores no mercado e na pesquisa. Dessa forma, o capítulo apresenta um panorama estruturado em duas categorias: ferramentas correlatas --- plataformas e sistemas comerciais ou \textit{open source} voltados à automação de operações de TI --- e trabalhos acadêmicos correlatos --- artigos recentes que investigam a aplicação de LLMs e técnicas de inteligência artificial ao diagnóstico de incidentes em infraestruturas de nuvem.
 
-% Multiple-language document - babel - selectlanguage vs begin/end{otherlanguage}
-% https://tex.stackexchange.com/questions/36526/multiple-language-document-babel-selectlanguage-vs-begin-endotherlanguage
-\begin{otherlanguage*}{brazil}
+O objetivo desta análise não é apenas mapear o que existe, mas identificar as lacunas operacionais que motivam e diferenciam a proposta deste trabalho. Ao final do capítulo, uma tabela comparativa sintetiza as principais dimensões de análise, posicionando o sistema proposto em relação ao estado da arte.
 
-    \chapter{Titulo do Capitulo}
+\section{Ferramentas Correlatas e de Mercado}
+\label{sec:ferramentas_correlatas}
 
-    \begin{flushright}
-        \englishword{\showfont}
-    \end{flushright}
+As ferramentas de AIOps disponíveis no mercado corporativo de observabilidade passaram por uma rápida consolidação nos últimos anos. Com a insuficiência dos painéis de controle estáticos, as grandes plataformas comerciais iniciaram uma corrida para integrar capacidades de Inteligência Artificial nativas em seus produtos. Simultaneamente, o ecossistema de código aberto (\textit{open source}) respondeu com ferramentas focadas na orquestração e gerenciamento de alertas.
 
+Abaixo, são analisadas as principais soluções que atualmente dominam a indústria, destacando suas abordagens para o diagnóstico automatizado e as limitações que justificam o desenvolvimento da prova de conceito deste trabalho.
 
-    % \newpage
-    \section{Título da Seção}
+\subsection{Datadog (Watchdog e Bits AI)}
 
-    Lipsum me [1]
+O Datadog é uma das plataformas de observabilidade baseadas em nuvem (SaaS) mais amplamente adotadas no mercado global. Sua abordagem para AIOps iniciou-se com o \textit{Watchdog}, um motor baseado em aprendizado de máquina clássico focado na detecção automática de anomalias em infraestrutura e \textit{Application Performance Monitoring} (APM), operando sem a necessidade de configuração manual de limiares.
 
-    \englishword{\showfont}
+Mais recentemente, a plataforma incorporou capacidades de IA generativa por meio do \textit{Bits AI}, um assistente conversacional que atua como copiloto para os engenheiros \cite{datadog2024bits}. O \textit{Bits AI} é capaz de responder a perguntas em linguagem natural sobre o estado da infraestrutura, correlacionar métricas, \textit{logs} e \textit{traces} automaticamente e sugerir causas prováveis para os incidentes detectados.
 
-    Lipsum me [2-3]
+Embora integre coleta de telemetria e inteligência artificial em uma plataforma unificada nativa na nuvem, o Datadog apresenta limitações que restringem sua adoção universal. O custo de licenciamento é expressivo, utilizando um modelo de faturamento baseado no volume de \textit{hosts} e no gigabyte de \textit{logs} indexados, tornando-se financeiramente oneroso para operações com grande massa de dados. Além disso, a ferramenta atua sob um forte \textit{vendor lock-in}: a inteligência artificial subjacente atua como uma ``caixa-preta'', impedindo qualquer customização do modelo de linguagem. Toda a telemetria corporativa deve, obrigatoriamente, ser exportada para a nuvem da Datadog, gerando desafios de conformidade e privacidade de dados.
 
-\end{otherlanguage*}
+\subsection{Dynatrace (\textit{Davis AI})}
+
+O Dynatrace diferencia-se no mercado corporativo pela robustez da sua arquitetura analítica. Seu motor de AIOps, denominado \textit{Davis}, emprega uma abordagem de inteligência artificial causal baseada em grafos topológicos (\textit{Smartscape}) para rastrear continuamente as dependências exatas entre os microsserviços \cite{dynatrace2024davis}. 
+
+Combinado recentemente ao \textit{Davis CoPilot} (alimentado por IA generativa), o sistema consegue não apenas identificar o ponto exato da falha no grafo de dependências, mas também traduzir o diagnóstico para explicações legíveis, reduzindo o ruído e priorizando incidentes baseados no real impacto ao negócio.
+
+Assim como o Datadog, as limitações do Dynatrace concentram-se nas restrições de custo e dependência tecnológica. Sendo uma solução corporativa com licenciamento baseado em unidades proprietárias (\textit{Dynatrace Units}), o custo costuma ser proibitivo para arquiteturas enxutas. Ademais, a plataforma é fortemente acoplada ao seu próprio agente (\textit{OneAgent}), o que dificulta ou inviabiliza integrações nativas com pilhas abertas e puras como o Prometheus e OpenTelemetry, além de impedir a execução de inferências localmente.
+
+\subsection{AWS DevOps Guru}
+
+O AWS DevOps Guru é um serviço gerenciado da Amazon Web Services voltado para a detecção de anomalias operacionais exclusivamente no ecossistema AWS \cite{aws2024devops}. Ele utiliza modelos de aprendizado de máquina treinados com anos de dados operacionais para identificar desvios em métricas do Amazon CloudWatch, \textit{logs} e eventos de configuração.
+
+Sua grande vantagem competitiva é a completa ausência de instrumentação manual adicional para ambientes que já operam integralmente na AWS. O serviço consome os dados nativos e emite recomendações de remediação diretamente integradas aos fluxos operacionais da provedora de nuvem.
+
+Entretanto, as limitações para ambientes híbridos ou de padrão aberto são significativas. O DevOps Guru opera unicamente sobre os padrões de dados da AWS, o que o torna incompatível com pilhas de observabilidade como Prometheus e Loki. Adicionalmente, suas recomendações são majoritariamente estáticas, baseadas em padrões pré-aprendidos pelo modelo, sem a fluidez do diagnóstico profundo gerado em tempo real por um LLM contextualizado. O processamento ocorre totalmente na infraestrutura da AWS, não sendo adaptável à execução \textit{on-premise}.
+
+\subsection{Keep (keephq)}
+
+O Keep (\textit{KeepHQ}) posiciona-se no mercado \textit{open source} de forma diferenciada: ele não gera métricas nem coleta \textit{logs} diretamente, atuando estritamente como um \textit{middleware} para o gerenciamento e orquestração de alertas \cite{keep2025}. Consumindo dados de provedores como Prometheus, Grafana e AWS CloudWatch, ele combate a fadiga de alertas por meio de deduplicação matemática e agrupamento semântico.
+
+Uma funcionalidade central do Keep é a criação de fluxos de trabalho operacionais via arquivos YAML (\textit{workflows-as-code}), permitindo o enriquecimento de alertas chamando APIs de terceiros (como OpenAI ou Anthropic) antes do envio da notificação. 
+
+Apesar de ser a ferramenta mais alinhada filosoficamente ao escopo de código aberto desta pesquisa, as limitações de seu motor de diagnóstico são patentes. O Keep terceiriza completamente a inteligência semântica: ele exige que a equipe construa manualmente os \textit{workflows} para extrair o texto de \textit{logs} do alerta e o envie para a IA externa. Trata-se de uma integração superficial com foco em sumarização dos alertas, em vez de um sistema desenhado primariamente para RAG sobre grandes volumes de telemetria cruzada. Além disso, a sua recente aquisição em 2025 pela Elastic levanta incertezas operacionais sobre o futuro contínuo de seu uso autônomo sem custos adicionais.
+
+\subsection{Síntese Comparativa e Posicionamento do Projeto}
+
+A análise das ferramentas correlatas revela uma dicotomia clara no mercado de operações. Por um lado, as plataformas comerciais (Datadog, Dynatrace, AWS DevOps Guru) oferecem um RCA automatizado maduro e ``pronto para uso'', mas cobram um preço elevado através de licenciamento proibitivo, \textit{vendor lock-in} e arquiteturas fechadas que não permitem inferência local por razões de conformidade de dados.
+
+Por outro lado, as iniciativas \textit{open source} focadas em orquestração (como o Keep) são eficientes no roteamento dos alertas, porém transferem o fardo e a complexidade da correlação semântica (a montagem refinada do contexto dos \textit{logs} e a integração de modelos quantizados) inteiramente à construção manual de scripts YAML pelo operador da infraestrutura.
+
+A Tabela \ref{tab:sintese_ferramentas} sintetiza as principais características destas soluções.
+
+\begin{table}[htbp]
+    \centering
+    \small
+    \caption{Síntese comparativa entre ferramentas correlatas e o sistema proposto.}
+    \label{tab:sintese_ferramentas}
+    \begin{tabular}{p{2.5cm} p{2cm} p{2cm} p{2cm} p{2cm} p{2.2cm}}
+        \hline
+        \textbf{Critério} & \textbf{Datadog (Bits AI)} & \textbf{Dynatrace (Davis)} & \textbf{AWS DevOps Guru} & \textbf{KeepHQ} & \textbf{Este Projeto (Middleware)} \\ 
+        \hline
+        \textbf{Modelo de licença} & Comercial SaaS & Comercial SaaS & Comercial SaaS & \textit{Open source} & \textit{Open source} \\ 
+        \textbf{Integração Prometheus/Loki} & Parcial & Incompatível & Incompatível & Integrado & Nativo / Primário \\ 
+        \textbf{Diagnóstico via LLM} & Proprietário & Proprietário & Padrões fixos & Depende de APIs pagas & RAG com LLMs locais e remotos \\ 
+        \textbf{Execução de LLM Local} & Não suportado & Não suportado & Não suportado & Não nativo & Suportado (via Ollama) \\ 
+        \textbf{Privacidade dos Dados} & Transferidos para a provedora & Transferidos para a provedora & Transferidos para a provedora & Transferidos (uso de API) & Total (em execução local) \\ 
+        \hline
+    \end{tabular}
+    \fonte{Autoria própria (2026).}
+\end{table}
+
+O protótipo (\textit{middleware}) proposto neste trabalho posiciona-se exatamente nesta lacuna de mercado. Ele constrói uma ponte técnica padronizada em ferramentas abertas e gratuitas de telemetria que automatiza nativamente a injeção profunda do contexto da falha em LLMs (seja via consumo de APIs externas ou modelos locais), garantinos diagnósticos de causa raiz enriquecidos e granulares sem os entraves do aprisionamento tecnológico corporativo.

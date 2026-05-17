@@ -130,3 +130,43 @@ Uma limitação arquitetural intrínseca dos LLMs é a Janela de Contexto (Conte
 Os logs de infraestrutura e aplicação, por natureza, são extremamente verbosos, repetitivos e carregados de ruído temporal (como timestamps milissegundos e hashes de sessão). Zhou et al. (2026) destacam que injetar despejos brutos de logs diretamente no prompt do LLM frequentemente extrapola o limite de contexto. Além disso, mesmo quando o limite não é ultrapassado, modelos tendem a sofrer do efeito "Lost in the Middle" (Perdido no Meio), onde informações cruciais sobre a causa raiz localizadas no centro de um log longo são ignoradas em prol de anomalias triviais no início ou no fim do documento.
 
 Para viabilizar o RCA automatizado, torna-se obrigatória a construção de um middleware que aplique a poda sintática de logs — filtrando linhas informacionais (INFO) e removendo timestamps redundantes — antes de encaminhar a carga útil (payload) estruturada para o modelo de linguagem. É essa curadoria da janela de contexto que garante diagnósticos precisos tanto em modelos comerciais quanto em arquiteturas open-source restritas.
+
+3. TRABALHOS RELACIONADOS E ESTADO DA ARTE
+
+Este capítulo tem como objetivo situar o presente trabalho no contexto tecnológico e acadêmico atual. Para justificar a arquitetura proposta, é fundamental analisar como o problema da Análise de Causa Raiz (RCA) e da fadiga de alertas está sendo abordado por diferentes atores. Dessa forma, o capítulo é dividido em duas frentes: a Seção 3.1 avalia as ferramentas correlatas (soluções comerciais e open-source adotadas pela indústria), enquanto a Seção 3.2 analisa os trabalhos acadêmicos recentes que buscam aprimorar o uso de Modelos de Linguagem de Grande Escala (LLMs) em Operações de TI (AIOps).
+
+3.1 Ferramentas Correlatas e de Mercado
+
+O mercado corporativo de observabilidade passou por uma rápida consolidação nos últimos anos. Com a insuficiência dos painéis de controle estáticos, as grandes plataformas comerciais iniciaram uma corrida para integrar capacidades de Inteligência Artificial nativas em seus produtos. Ao mesmo tempo, o ecossistema de código aberto (open-source) respondeu com ferramentas focadas na orquestração de alertas.
+
+Abaixo, são analisadas as principais soluções que atualmente dominam a indústria, destacando suas abordagens para o RCA e as limitações que justificam o desenvolvimento da Prova de Conceito (PoC) deste trabalho.
+
+3.1.1 Datadog (Watchdog e Bits AI)
+
+O Datadog é uma das plataformas de observabilidade baseadas em nuvem (SaaS) mais adotadas globalmente. A sua abordagem para AIOps iniciou-se com o Watchdog, um motor baseado em Machine Learning clássico focado na detecção automática de anomalias em infraestrutura e APM (Application Performance Monitoring), sem a necessidade de configuração manual de limiares.
+
+Recentemente, a plataforma introduziu o Bits AI, um assistente conversacional alimentado por IA Generativa. O Bits AI atua como um co-piloto para os engenheiros, resumindo incidentes e sugerindo comandos para investigação.
+
+Limitações: A principal barreira do Datadog é o alto custo associado à ingestão massiva de logs (faturamento baseado em gigabytes indexados) e o rigoroso vendor lock-in. Trata-se de uma "caixa-preta": as equipes não têm controle sobre o modelo de IA subjacente utilizado, nem podem ajustar a engenharia de prompt ou optar por utilizar LLMs locais por questões de privacidade de dados. Toda a telemetria corporativa deve, obrigatoriamente, ser exportada para a nuvem da Datadog.
+
+3.1.2 Dynatrace (Davis AI)
+
+A Dynatrace diferencia-se no mercado corporativo pela sua arquitetura analítica. O seu motor de AIOps, o Davis AI, utiliza uma abordagem dupla: emprega IA Causal (determinística) baseada em grafos topológicos (o Smartscape) para rastrear as dependências exatas dos microsserviços, e combina isso com a recente adição do Davis CoPilot (IA Generativa) para traduzir o grafo de falhas em explicações legíveis.
+
+Limitações: Embora seja tecnicamente robusta por não depender de correlação baseada apenas em tempo (mas sim em topologia real), a Dynatrace é uma solução Enterprise com licenciamento extremamente restritivo e oneroso. Ela exige a instalação dos seus agentes proprietários (OneAgent) em toda a infraestrutura, o que inviabiliza a sua adoção em projetos de orçamento enxuto ou arquiteturas que já padronizaram o uso do OpenTelemetry puro. O ecossistema fechado impede a experimentação com modelos open-source (como o Llama 3) para o diagnóstico.
+
+3.1.3 KeepHQ (Orquestração Open-Source)
+
+Em contrapartida aos monólitos comerciais, o Keep (KeepHQ) surge como uma plataforma open-source focada estritamente no gerenciamento e na orquestração de alertas. O Keep não gera métricas nem coleta logs diretamente; ele atua como um middleware que consome alertas de fontes diversas (como Prometheus, Grafana e AWS CloudWatch) e os centraliza.
+
+O seu grande trunfo é o combate à "fadiga de alertas" através da correlação matemática e deduplicação, permitindo a criação de workflows de resposta a incidentes via arquivos YAML (workflows-as-code). Por meio desses workflows, é possível configurar ações como o enriquecimento de um alerta chamando uma API de terceiros antes de enviar uma notificação para o Slack.
+
+Limitações: O KeepHQ é excepcional na automação de fluxos de resposta, mas não possui um motor nativo de RCA baseado em LLMs. Para que ele realize análises semânticas de logs, o engenheiro precisa construir manualmente os workflows que extraem o texto do alerta e disparam requisições (APIs) para provedores como OpenAI ou Groq. Ele terceiriza a inteligência do diagnóstico, exigindo um esforço considerável de configuração para alinhar o formato dos alertas com os prompts exigidos pela IA.
+
+3.1.4 Síntese e Posicionamento do Projeto
+
+A análise das ferramentas correlatas revela uma dicotomia no mercado de operações. Por um lado, as plataformas comerciais (Datadog, Dynatrace) oferecem RCA com Inteligência Artificial "pronta para uso", mas cobram um preço alto através de licenciamento proibitivo, vendor lock-in e dependência de caixas-pretas inacessíveis aos engenheiros de confiabilidade (SREs).
+
+Por outro lado, ferramentas open-source de orquestração (como o KeepHQ) resolvem o problema do roteamento de alertas, mas deixam o fardo da correlação semântica e da injeção de contexto de logs inteiramente a cargo do operador.
+
+O protótipo (middleware) proposto neste Trabalho de Conclusão de Curso posiciona-se exatamente nesta lacuna. Ele visa construir uma ponte técnica que mantenha a infraestrutura ancorada em padrões abertos e gratuitos (Métricas via Prometheus e Logs via Loki), mas que automatize nativamente a injeção do contexto da falha em LLMs (comerciais via API ou locais via quantização), fornecendo um RCA semântico preciso sem aprisionamento tecnológico ou custos de ingestão extorsivos.
